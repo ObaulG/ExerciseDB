@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Submit an exercise</title>
+    <!-- Local Bootstrap integration-->
+    <link href="css/main_style.css"
+          rel="stylesheet">
+    <script src="exercise_submit.js"></script>
+    <!-- LaTeX Renderer with simple elements-->
+    <script type="module">
+        import { LaTeXJSComponent } from "https://cdn.jsdelivr.net/npm/latex.js/dist/latex.mjs"
+        customElements.define("latex-js", LaTeXJSComponent)
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/latex.js/dist/latex.js"></script>
+
+  </head>
+
+<body>
+<header>
+    <ul class="navigation">
+        <li><a href="#" class="navigation"><h1>ExerciseDB</h1></a></li>
+        <li><a href="#">Home</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Products</a></li>
+        <li><a href="#">Contact</a></li>
+    </ul>
+</header>
+
+
+<div class="main-container">
+    <div class="page-title">
+        <h1>Submit an exercise</h1>
+    </div>
+
+    <!-- 3-column form -->
+    <div class="exercise-form">
+
+        <div class="main-data">
+            <input type="text" class="form-control" id="extitle" placeholder="...">
+            <input type="number" class="form-control" id="exdiff" placeholder="Between 1 and 20" min="1" max="20">
+        </div>
+
+        <div class="exercise-input">
+            <div class="mini-latex-box" id="latex-box-ex">
+                <!-- 2-column form -->
+                <textarea id="ex_text" name="content"
+                      rows="15" cols="70">
+On estime qu'il faut en moyenne 8 cahiers par élève et par an. Une école comptant 144 élèves, on demande :
+
+\begin{itemize}
+\item Combien de cahiers sont utilisés annuellement ?
+\item En comptant 9 mois de classe, quelle est la consommation mensuelle de l'école ?
+\item Ces cahiers sont vendus par paquets de 50. Combien faut-il acheter de paquets ?
+\item Un paquet vaut 9,80 F. Quelle sera la dépense annuelle ?
+\end{itemize}
+                </textarea>
+
+                <latex-js baseURL="https://cdn.jsdelivr.net/npm/latex.js/dist/" id="ex_previsu">
+On estime qu'il faut en moyenne 8 cahiers par élève et par an. Une école comptant 144 élèves, on demande :
+
+\begin{itemize}
+\item Combien de cahiers sont utilisés annuellement ?
+\item En comptant 9 mois de classe, quelle est la consommation mensuelle de l'école ?
+\item Ces cahiers sont vendus par paquets de 50. Combien faut-il acheter de paquets ?
+\item Un paquet vaut 9,80 F. Quelle sera la dépense annuelle ?
+\end{itemize}
+
+Test $ax^2+bx+c=0$
+                </latex-js>
+            </div>
+
+
+            <div class="mini-latex-box" id="latex-box-sol">
+                <!-- 2-column form -->
+                <textarea id="sol_text" name="content"
+                      rows="15" cols="70">
+\begin{itemize}
+\item On multiplie 8 par 144.
+\item On divise la valeur obtenue précédemment par 9.
+\item On divise le nombre de cahiers utilisés annuellement par 50. Si le reste est supérieur à 0, on doit ajouter un paquet de plus.
+\item On multiplie le nombre de paquets achetés par 9,80.
+\end{itemize}
+                </textarea>
+
+                <latex-js baseURL="https://cdn.jsdelivr.net/npm/latex.js/dist/" id="sol_previsu">
+\begin{itemize}
+\item On multiplie 8 par 144.
+\item On divise la valeur obtenue précédemment par 9.
+\item On divise le nombre de cahiers utilisés annuellement par 50. Si le reste est supérieur à 0, on doit ajouter un paquet de plus.
+\item On multiplie le nombre de paquets achetés par 9,80.
+\end{itemize}
+                </latex-js>
+            </div>
+            <input type="button" name="preview" id="bt_preview" value="Preview LaTeX rendering (both exercise and solution)">
+            <input type="button" name="submit" id="bt_submit" value="Submit this exercise">
+        </div>
+
+        <div class="exercise-tags">
+            <h2> Select appropriate tags for this exercise:</h2>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
