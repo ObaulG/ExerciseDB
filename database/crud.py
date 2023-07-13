@@ -29,10 +29,15 @@ def get_items(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Item).offset(skip).limit(limit).all()
 
 
-def create_educ_item(db: Session, educ_item: schemas.EducItemData):
-    db_educ_item = models.EducItemData(id=educ_item.id,
-                                       code=educ_item.code,
-                                       title=educ_item.title,
+def create_educ_item(db: Session, educ_item: schemas.EducItemDataSubmit):
+    """
+
+    :param db:
+    :param educ_item:
+    :return:
+    """
+    db_educ_item = models.EducItemData(title=educ_item.title,
+                                       type=educ_item.type,
                                        description=educ_item.description)
     db.add(db_educ_item)
     db.commit()
@@ -52,7 +57,6 @@ def create_exercise(db: Session, exercise: schemas.Exercise):
                                   educ_items=exercise.educ_items)
 
 
-
 def get_exercise_by_id(db: Session, id: int):
     pass
 
@@ -63,3 +67,5 @@ def create_static_exercise(db: Session, exercise: schemas.StaticExercise):
 
 def create_static_exercise_answer(db: Session, answer: schemas.StaticExerciseAnswer):
     pass
+
+

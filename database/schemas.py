@@ -14,8 +14,18 @@ class EducItemData(BaseModel):
     thus forming a graph.
     """
     id: int
-    code: str
+    type: EducItemType
+    code: str = ""
     title: str
+    description: str
+
+
+class EducItemDataSubmit(BaseModel):
+    """
+    Data sent by a client to submit an EducItemData
+    """
+    title: str
+    type: int
     description: str
 
 

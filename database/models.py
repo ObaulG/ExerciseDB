@@ -24,7 +24,8 @@ class EducItemData(Base):
     __tablename__ = "educitemdata"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    code: Mapped[int] = mapped_column(Integer)
+    type: Mapped[int] = mapped_column()
+    code: Mapped[str] = mapped_column(default="")
     title: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column(index=True)
 
@@ -53,20 +54,8 @@ class Exercise(Base):
     id_exercise = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     difficulty = Column(Integer)
-    author = Column(Integer(ForeignKey("user.id")))
+    author = Column(Integer, ForeignKey("user.id"))
     educ_items_id = relationship("EducItemData", back_populates="")
-
-
-class StaticExercise(Exercise):
-    """
-    Exercise with a static content. Can have multiple answers.
-    """
-    __tablename__ = "static_exercise"
-    id_exercise: Mapped[int] = mapped_column(ForeignKey("Exercise.id_exercise"), primary_key=True)
-    content: Mapped[str] = mapped_column()
-    answers_id: Mapped[int] = mapped_column(ForeignKey("static_exercise_answer.id_anwser"))
-
-    answers: Mapped["StaticExerciseAnswer"] = relationship()
 
 
 class StaticExerciseAnswer(Base):
@@ -75,3 +64,19 @@ class StaticExerciseAnswer(Base):
     id_answer: Mapped[int] = mapped_column(primary_key=True)
     id_author: Mapped[int] = mapped_column(ForeignKey("user.id"))
     answer_text: Mapped[str] = mapped_column()
+
+
+class StaticExercise(Base):
+    """
+    Exercise with a static content. Can have multiple answers.
+    """
+    __tablename__ = "static_exercise"
+
+    id_exercise: Mapped[int] = mapped_column(ForeignKey("exercise.id_exercise"), primary_key=True)
+    content: Mapped[str] = mapped_column()
+    answers_id: Mapped[int] = mapped_column(ForeignKey("static_exercise_answer.id_answer"))
+
+    answers: Mapped["StaticExerciseAnswer"] = relationship()
+
+
+

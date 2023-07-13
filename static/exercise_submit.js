@@ -29,7 +29,7 @@ function render_latex_from_dom_element(source_container, target_container){
 console.log("Loaded...");
 document.addEventListener("DOMContentLoaded", function(event){
 
-    var bt_submit = document.getElementById("bt_submit");
+    var bt_submit = document.getElementById("bt_submit_exercise");
     var bt_preview = document.getElementById("bt_preview");
 
     // A latex-box holds a textarea and a latex-js custom node.

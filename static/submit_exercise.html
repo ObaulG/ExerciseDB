@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Submit an exercise</title>
     <!-- Local Bootstrap integration-->
-    <link href="css/main_style.css"
+    <link href="main_style.css"
           rel="stylesheet">
     <script src="exercise_submit.js"></script>
+    <script src="skills.js"></script>
     <!-- LaTeX Renderer with simple elements-->
     <script type="module">
         import { LaTeXJSComponent } from "https://cdn.jsdelivr.net/npm/latex.js/dist/latex.mjs"
@@ -94,12 +95,29 @@ Test $ax^2+bx+c=0$
                 </latex-js>
             </div>
             <input type="button" name="preview" id="bt_preview" value="Preview LaTeX rendering (both exercise and solution)">
-            <input type="button" name="submit" id="bt_submit" value="Submit this exercise">
+            <input type="button" name="submit" id="bt_submit_exercise" value="Submit this exercise">
         </div>
 
         <div class="exercise-tags">
-            <h2> Select appropriate tags for this exercise:</h2>
+            <div>
+                <h2> Select appropriate tags for this exercise:</h2>
+                <ul id="skill_list">
+
+                </ul>
+            </div>
+            <div class="create_skill">
+                <h2> Skill not in the list ? Add it</h2>
+                <label for="skill_title">Ttile</label>
+                <input type="text" name="skill_title" id="skill_title">
+                <label for="educ_item_type"> Select a type</label>
+                <input type="number" min="1" max="3" name="educ_item_list" id="educ_item_type">
+                <textarea id="skill_description" name="content"
+                          rows="8" cols="50">Cette compétence représente...
+                </textarea>
+                <input type="button" name="submit" id="bt_submit_skill" value="Submit this skill">
+            </div>
         </div>
+
     </div>
 </div>
 
