@@ -11,8 +11,8 @@ from .databse import Base
 class User(Base):
     __tablename__ = "user"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(30))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
+    pseudo: Mapped[str] = mapped_column(String(30))
     email: Mapped[str] = mapped_column(unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String)
     is_active: Mapped[bool] = Column(Boolean, default=True)
@@ -23,7 +23,7 @@ class User(Base):
 class EducItemData(Base):
     __tablename__ = "educitemdata"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
     type: Mapped[int] = mapped_column()
     code: Mapped[str] = mapped_column(default="")
     title: Mapped[str] = mapped_column(index=True)
@@ -51,7 +51,7 @@ class Exercise(Base):
     """
     __tablename__ = "exercise"
 
-    id_exercise = Column(Integer, primary_key=True, index=True)
+    id_exercise = Column(Integer, primary_key=True, index=True, autoincrement=True)
     title = Column(String, index=True)
     difficulty = Column(Integer)
     author = Column(Integer, ForeignKey("user.id"))
@@ -61,7 +61,7 @@ class Exercise(Base):
 class StaticExerciseAnswer(Base):
     __tablename__ = "static_exercise_answer"
 
-    id_answer: Mapped[int] = mapped_column(primary_key=True)
+    id_answer: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     id_author: Mapped[int] = mapped_column(ForeignKey("user.id"))
     answer_text: Mapped[str] = mapped_column()
 
@@ -74,9 +74,9 @@ class StaticExercise(Base):
 
     id_exercise: Mapped[int] = mapped_column(ForeignKey("exercise.id_exercise"), primary_key=True)
     content: Mapped[str] = mapped_column()
-    answers_id: Mapped[int] = mapped_column(ForeignKey("static_exercise_answer.id_answer"))
 
     answers: Mapped["StaticExerciseAnswer"] = relationship()
+
 
 
 

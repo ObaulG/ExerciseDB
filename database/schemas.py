@@ -52,6 +52,7 @@ class SkillReferential(BaseModel):
 
 
 class UserBase(BaseModel):
+    pseudo: str
     email: str
 
 
@@ -68,15 +69,27 @@ class User(UserBase):
         orm_mode = True
 
 
-class Exercise(BaseModel):
-    """
-    An exercise should train one or multiple skills.
-    """
-    exercise_id: int
+class BaseExercise(BaseModel):
     title: str
     difficulty: int
     author: User
     educ_items: list[EducItemData]
+
+
+class Exercise(BaseExercise):
+    """
+    An exercise should train one or multiple skills.
+    """
+    exercise_id: int
+
+
+class StaticExerciseSubmit(BaseModel):
+    title: str
+    difficulty: int
+    author: User
+    educ_items: list[EducItemData]
+    ex_content: str
+    ex_answer: str
 
 
 class StaticExerciseAnswer(BaseModel):
@@ -85,6 +98,16 @@ class StaticExerciseAnswer(BaseModel):
     answer_text: str
 
 
-class StaticExercise(Exercise):
+class StaticExercise(BaseModel):
+    id_exercise: int
     content: str
     answers: list[StaticExerciseAnswer]
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None

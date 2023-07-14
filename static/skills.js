@@ -45,7 +45,8 @@ function submit_skill(title, type, description){
         "type": type,
         "description": description,
     };
-    xhttp.open ("POST", "/skills/submit/");
+    xhttp.open ("POST", "/educitem/submit");
+    //xhttp.open ("POST", "http://localhost:8000/educitem/submit");
     xhttp.setRequestHeader("content-type", "application/json");
     xhttp.send(JSON.stringify(skill_json), false);
 }
@@ -60,7 +61,7 @@ document.addEventListener("DOMContentLoaded", function(event){
 
     bt_submit_skill.onclick = function(e){
         let title = new_skill_title.value;
-        let type = new_skill_type.value;
+        let type = Number(new_skill_type.value);
         let descr = new_skill_description.value;
 
         console.log(title +" "+type+" "+descr);
