@@ -3,8 +3,12 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 
 
-def get_user(db: Session, user_id: int):
+def get_user_by_id(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
+
+
+def get_user_by_pseudo(db: Session, pseudo: str):
+    return db.query(models.User).filter(models.User.pseudo == pseudo).first()
 
 
 def get_user_by_email(db: Session, email: str):
@@ -45,6 +49,10 @@ def create_educ_item_from_submit(db: Session, educ_item: schemas.EducItemDataSub
     db.commit()
     db.refresh(db_educ_item)
     return db_educ_item
+
+
+def create_educ_item_mastery_for_user(db: Session):
+    pass
 
 
 def get_educ_items(db: Session, skip: int = 0, limit: int = 1000):

@@ -49,6 +49,11 @@ latex-js {
     align-items: left;
 }
 
+.exercise-form .exercise-tags{
+    display: flex;
+    flex-flow: column wrap;
+    align-items: left;
+}
 
 .exercise-input{
     display: flex;

@@ -69,6 +69,15 @@ class User(UserBase):
         orm_mode = True
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str
+
+
 class BaseExercise(BaseModel):
     title: str
     difficulty: int
@@ -102,12 +111,3 @@ class StaticExercise(BaseModel):
     id_exercise: int
     content: str
     answers: list[StaticExerciseAnswer]
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str | None = None

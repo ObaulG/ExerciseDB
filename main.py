@@ -10,22 +10,19 @@ from database.databse import SessionLocal, engine
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
 from database.schemas import EducItemDataSubmit
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from passlib.context import CryptContext
-from pydantic import BaseModel
+from typing import Annotated
+from auth_logic import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, oauth2_scheme
+from auth_logic import authenticate_user, create_access_token
+from database.schemas import User, Token, TokenData
+import database.crud as crud
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -48,6 +45,8 @@ logging.config.fileConfig('logging.conf', disable_existing_loggers=False)
 # get root logger
 logger = logging.getLogger(__name__)  # the __name__ resolve to "main" since we are at the root of the project.
                                       # This will get the root logger since no logger in the configuration has this name.
+
+
 # Dependency
 def get_db():
     db = SessionLocal()
@@ -64,21 +63,62 @@ def retrieve_document_as_str(path: str) -> str:
     return doc
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = crud.get_user_by_pseudo(db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+async def get_current_active_user(
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
 
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
+
     start_time = time.time()
     response = await call_next(request)
+    print(request.method, request.url)
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
     return response
+
+
+@app.post("/token", response_model=Token)
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Session = Depends(get_db)
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.post("/users/", response_model=schemas.User)
@@ -101,6 +141,14 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
+
+
+@app.post("/educitem/submit", response_model=schemas.EducItemData)
+def submit_educ_item(educitem: EducItemDataSubmit, db: Session = Depends(get_db)):
+    logging.info("submit educ item now")
+    new_educ_item = crud.create_educ_item_from_submit(db=db, educ_item=educitem)
+
+    return new_educ_item
 
 
 @app.post("/exercises/submit", response_model=schemas.Exercise)
@@ -132,7 +180,4 @@ def get_educ_items_list(db: Session = Depends(get_db)):
     return educ_items
 
 
-@app.post("/educitem/submit", response_model=schemas.EducItemData)
-def submit_educ_item(educitem: EducItemDataSubmit, db: Session = Depends(get_db)):
-    logging.info("submit educ item now")
-    return crud.create_educ_item(db=db, educ_item=educitem)
+
