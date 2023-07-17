@@ -29,7 +29,6 @@ class EducItemData(Base):
     title: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column(index=True)
 
-
 class EducItemMastery(Base):
     """
     Assiociative table between a User an EducItemData : each user has
@@ -51,11 +50,11 @@ class Exercise(Base):
     """
     __tablename__ = "exercise"
 
-    id_exercise = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    title = Column(String, index=True)
-    difficulty = Column(Integer)
-    author = Column(Integer, ForeignKey("user.id"))
-    educ_items_id = relationship("EducItemData", back_populates="")
+    id_exercise: Mapped[int] = Column(primary_key=True, index=True, autoincrement=True)
+    title: Mapped[float] = Column(index=True)
+    difficulty: Mapped[int] = Column()
+    author_id: Mapped[int] = Column(ForeignKey("user.id"))
+    educ_items_id: Mapped[List["EducItemData"]] = relationship()
 
 
 class StaticExerciseAnswer(Base):
