@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Table, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from typing import List
 from typing import Optional
@@ -14,10 +14,11 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
     pseudo: Mapped[str] = mapped_column(String(30))
     email: Mapped[str] = mapped_column(unique=True, index=True)
-    hashed_password: Mapped[str] = mapped_column(String)
-    is_active: Mapped[bool] = Column(Boolean, default=True)
+    hashed_password: Mapped[str] = mapped_column()
+    is_active: Mapped[bool] = mapped_column(default=True)
 
     educ_items_masteries: Mapped[List["EducItemMastery"]] = relationship(back_populates="user")
+    exercises_written: Mapped[List["Exercise"]] = relationship()
 
 
 class EducItemData(Base):
@@ -29,15 +30,18 @@ class EducItemData(Base):
     title: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column(index=True)
 
+    users: Mapped[List["User"]] = relationship()
+
+
 class EducItemMastery(Base):
     """
-    Assiociative table between a User an EducItemData : each user has
+    Associative table between a User an EducItemData : each user has
     a mastery level on each existing EducItem.
     """
     __tablename__ = "educitemuser"
 
-    educitem_id: Mapped[int] = mapped_column(Integer, ForeignKey("educitemdata.id"), primary_key=True)
-    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), primary_key=True)
+    educitem_id: Mapped[int] = mapped_column(ForeignKey("educitemdata.id"), primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
     mastery: Mapped[float] = mapped_column()
 
     user: Mapped["User"] = relationship()
@@ -50,10 +54,11 @@ class Exercise(Base):
     """
     __tablename__ = "exercise"
 
-    id_exercise: Mapped[int] = Column(primary_key=True, index=True, autoincrement=True)
+    exercise_id: Mapped[int] = Column(primary_key=True, index=True, autoincrement=True)
     title: Mapped[float] = Column(index=True)
     difficulty: Mapped[int] = Column()
     author_id: Mapped[int] = Column(ForeignKey("user.id"))
+
     educ_items_id: Mapped[List["EducItemData"]] = relationship()
 
 
@@ -71,11 +76,16 @@ class StaticExercise(Base):
     """
     __tablename__ = "static_exercise"
 
-    id_exercise: Mapped[int] = mapped_column(ForeignKey("exercise.id_exercise"), primary_key=True)
+    id_exercise: Mapped[int] = mapped_column(ForeignKey("exercise.exercise_id"), primary_key=True)
     content: Mapped[str] = mapped_column()
 
     answers: Mapped["StaticExerciseAnswer"] = relationship()
 
 
-
+exercise_educ_item = Table(
+    "exercise_educ_item",
+    Base.metadata,
+    Column("exercise_id", ForeignKey("exercise.exercise_id"), primary_key=True),
+    Column("educ_item_id", ForeignKey("educitemdata.id"), primary_key=True),
+)
 
