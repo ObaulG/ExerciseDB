@@ -143,7 +143,13 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
-@app.post("/educitem/submit", response_model=schemas.EducItemData)
+@app.get("/education-items", response_model=list[schemas.EducItemData])
+def get_educ_items_list(db: Session = Depends(get_db)):
+    educ_items = crud.get_educ_items(db)
+    return educ_items
+
+
+@app.post("/education-items", response_model=schemas.EducItemData)
 def submit_educ_item(educitem: EducItemDataSubmit, db: Session = Depends(get_db)):
     logging.info("submit educ item now")
     new_educ_item = crud.create_educ_item_from_submit(db=db, educ_item=educitem)
@@ -151,26 +157,8 @@ def submit_educ_item(educitem: EducItemDataSubmit, db: Session = Depends(get_db)
     return new_educ_item
 
 
-@app.post("/exercises/submit", response_model=schemas.Exercise)
+@app.post("/exercises", response_model=schemas.Exercise)
 def create_static_exercise(exercise: schemas.StaticExerciseSubmit, db: Session = Depends(get_db)):
-    base_exercise = schemas.BaseExercise(title=exercise.title,
-                                         difficulty=exercise.difficulty,
-                                         author=exercise.author,
-                                         educ_items=exercise.educ_items)
-
-    db_base_exercise = crud.create_exercise_from_submit(db, base_exercise)
-
-    # the exercise now has an id, we can create the entry in static_exercise
-    static_exercise = schemas.StaticExercise(id_exercise=db_base_exercise.id_exercise,
-                                             content=exercise.ex_content,
-                                             answers=[exercise.ex_answer])
-    db_static_answer = crud.create_static_exercise(static_exercise)
-
-    return base_exercise
-
-
-@app.post("/exercises/test/submit", response_model=schemas.Exercise)
-def create_static_exercise_test(exercise: schemas.StaticExerciseSubmit, db: Session = Depends(get_db)):
     base_exercise = schemas.BaseExercise(title=exercise.title,
                                          difficulty=exercise.difficulty,
                                          author=exercise.author,
@@ -192,14 +180,13 @@ def get_exercise_by_id(exercise_id: int, db: Session = Depends(get_db)):
     pass
 
 
-@app.get("/educitem/all")
-def get_educ_items_list(db: Session = Depends(get_db)):
-    educ_items = crud.get_educ_items(db)
-    return educ_items
+
+
 
 app.mount("/",
           StaticFiles(directory=static_dir),
           name="static")
+
 
 if __name__ == '__main__':
     uvicorn.run("app:app")

@@ -43,6 +43,7 @@ def create_educ_item_from_submit(db: Session, educ_item: schemas.EducItemDataSub
     :return: the row saved in the db
     """
     db_educ_item = models.EducItemData(title=educ_item.title,
+                                       code=str(educ_item.type),
                                        type=educ_item.type,
                                        description=educ_item.description)
     db.add(db_educ_item)

@@ -1,28 +1,63 @@
-function create_educ_item_element(id, title, descr){
+function handleErrors(response) {
+    if (!response.ok) {
+        throw Error(response.statusText);
+    }
+    return response;
+}
+
+
+function create_educ_item_selectable_element(id, title, descr){
+/*
+<div class="cat">
+   <label>
+      <input type="checkbox" value="1"><span>EducItem name</span>
+   </label>
+</div>
+*/
+    console.log("Adding EducItem " + title + " to the list...");
+    var new_checkbox = document.createElement("input");
+    new_checkbox.setAttribute("type", "checkbox");
+    new_checkbox.setAttribute("value", id);
+    var span_title = document.createElement("span");
+    span_title.innerText = title
+    var label = document.createElement("label");
+    label.appendChild(new_checkbox);
+    label.appendChild(span_title);
+    var div_cat = document.createElement("div");
+    div_cat.setAttribute("class", "cat");
+    div_cat.setAttribute("id", "educ-item-"+String(id))
+    div_cat.appendChild(label);
+
+
+    skill_list.appendChild(div_cat);
 
 }
 
 async function retrieve_skill_list(){
-    var xhttp = new XMLHttpRequest ();
-    xhttp.onreadystatechange = function () {
-        if (xhttp.readyState == 4){
-            // this request should return a HTTP resource
-            var res = xhttp.responseText;
-            if (xhttp.status != 200){
-                // we can make the server send a text explaining the error
-                // (username inexistant or wrong password)
-                // instead of making a pop-up
-                console.log("Failed to retrieve (error " + str(xhttp.status) + ")");
-            }else{
-                // The server has sent a list of skills...
+    const resp = await fetch("/education-items", {
+        method: "GET",
+    })
+    .then(response => {
+        var response = response.json();
+        return response;
+        })
+    .then(data => {
+        console.log(data);
+        console.log("values: " + data.values().toString());
+        // data should be a JSON holding a list of EducItemData
+        for (k in data){
+            console.log(data);
+            var id = data[k].id;
+            var title = data[k].title;
+            var descr = data[k].descr;
 
-            }
+            create_educ_item_selectable_element(id, title, descr);
         }
-    };
 
-    xhttp.open ("GET", "/educ_items");
-    xhttp.setRequestHeader("content-type", "application/json");
-    xhttp.send("", false);
+    })
+    .catch(function(error) {
+        console.log('An error has occured... : ' + error.message);
+    });
 }
 
 
@@ -34,17 +69,21 @@ async function submit_skill(title, type, description){
         "description": description,
     });
     console.log("Submitting EducItem...");
-    const resp = await fetch("/educitem/submit", {
+    const resp = await fetch("/education_items", {
         method: "POST",
         headers:{
             "Content-Type": "application/json"
         },
         body: skill_json
     })
+    .then(handleErrors)
     .then(response => {
         var response = response.json();
         return response;
         })
+    .catch(function(error) {
+        console.log('An error has occured... : ' + error.message);
+    })
     .then(data => {
         console.log(data);
         // data should be a JSON holding an
@@ -53,7 +92,7 @@ async function submit_skill(title, type, description){
         var title = data["title"];
         var descr = data["descr"];
 
-        create_educ_item_element(id, title, descr);
+        create_educ_item_selectable_element(id, title, descr);
     })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
@@ -79,7 +118,8 @@ document.addEventListener("DOMContentLoaded", function(event){
         let type = Number(new_skill_type.value);
         let descr = new_skill_description.value;
 
-
         submit_skill(title, type, descr);
     };
+
+    var resp = retrieve_skill_list();
 });

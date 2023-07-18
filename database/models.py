@@ -8,6 +8,14 @@ from sqlalchemy.orm import relationship
 from .databse import Base
 
 
+exercise_educ_item = Table(
+    "exercise_educ_item",
+    Base.metadata,
+    Column("exercise_id", Integer, ForeignKey("exercise.exercise_id"), primary_key=True),
+    Column("educ_item_id", Integer, ForeignKey("educitemdata.id"), primary_key=True),
+)
+
+
 class User(Base):
     __tablename__ = "user"
 
@@ -29,8 +37,6 @@ class EducItemData(Base):
     code: Mapped[str] = mapped_column(default="")
     title: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column(index=True)
-
-    users: Mapped[List["User"]] = relationship()
 
 
 class EducItemMastery(Base):
@@ -54,12 +60,12 @@ class Exercise(Base):
     """
     __tablename__ = "exercise"
 
-    exercise_id: Mapped[int] = Column(primary_key=True, index=True, autoincrement=True)
-    title: Mapped[float] = Column(index=True)
-    difficulty: Mapped[int] = Column()
-    author_id: Mapped[int] = Column(ForeignKey("user.id"))
+    exercise_id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(index=True)
+    difficulty: Mapped[int] = mapped_column()
+    author_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
-    educ_items_id: Mapped[List["EducItemData"]] = relationship()
+    educ_items_id: Mapped[List["EducItemData"]] = relationship(secondary=exercise_educ_item)
 
 
 class StaticExerciseAnswer(Base):
@@ -67,7 +73,10 @@ class StaticExerciseAnswer(Base):
 
     id_answer: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     id_author: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    id_exercise: Mapped[int] = mapped_column(ForeignKey("static_exercise.exercise_id"))
     answer_text: Mapped[str] = mapped_column()
+
+    static_exercise: Mapped["StaticExercise"] = relationship()
 
 
 class StaticExercise(Base):
@@ -76,16 +85,10 @@ class StaticExercise(Base):
     """
     __tablename__ = "static_exercise"
 
-    id_exercise: Mapped[int] = mapped_column(ForeignKey("exercise.exercise_id"), primary_key=True)
+    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercise.exercise_id"), primary_key=True)
     content: Mapped[str] = mapped_column()
 
-    answers: Mapped["StaticExerciseAnswer"] = relationship()
 
 
-exercise_educ_item = Table(
-    "exercise_educ_item",
-    Base.metadata,
-    Column("exercise_id", ForeignKey("exercise.exercise_id"), primary_key=True),
-    Column("educ_item_id", ForeignKey("educitemdata.id"), primary_key=True),
-)
+
 
