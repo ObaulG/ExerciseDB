@@ -60,6 +60,11 @@ class UserCreate(UserBase):
     password: str
 
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
 class User(UserBase):
     id: int
     is_active: bool
@@ -82,7 +87,7 @@ class BaseExercise(BaseModel):
     title: str
     difficulty: int
     author: User
-    educ_items: list[EducItemData]
+    educ_items: list[int]
 
 
 class Exercise(BaseExercise):
@@ -95,8 +100,7 @@ class Exercise(BaseExercise):
 class StaticExerciseSubmit(BaseModel):
     title: str
     difficulty: int
-    author: User
-    educ_items: list[EducItemData]
+    educ_items_id: list[int]
     ex_content: str
     ex_answer: str
 

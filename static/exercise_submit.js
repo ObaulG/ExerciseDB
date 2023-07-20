@@ -26,8 +26,50 @@ function render_latex_from_dom_element(source_container, target_container){
     target_container.textContent = generator.domFragment();
 }
 
+async function submit_exercise(title, difficulty, body, answer, educ_items){
+
+    var exercise_json = JSON.stringify({
+        "title": title,
+        "difficulty": difficulty,
+        "ex_content": body,
+        "ex_answer": answer,
+        "educ_items_id": educ_items_id
+    });
+    console.log("Submitting new exercise...");
+    const resp = await fetch("/exercises", {
+        method: "POST",
+        headers:{
+            "Content-Type": "application/json"
+        },
+        body: exercise_json
+    })
+    .then(handleErrors)
+    .then(response => {
+        var response = response.json();
+        return response;
+        })
+    .catch(function(error) {
+        console.log('An error has occured... : ' + error.message);
+    })
+    .then(data => {
+        console.log(data);
+        // data should be a JSON holding an
+        // EducItemData
+        var id = data["id"];
+        var title = data["title"];
+        var descr = data["descr"];
+
+        create_educ_item_selectable_element(id, title, descr);
+    })
+    .catch(function(error) {
+        console.log('An error has occured... : ' + error.message);
+    });
+}
 console.log("Loaded...");
 document.addEventListener("DOMContentLoaded", function(event){
+
+    var title = document.getElementById("extitle");
+    var diff = document.getElementById("exdiff");
 
     var bt_submit = document.getElementById("bt_submit_exercise");
     var bt_preview = document.getElementById("bt_preview");
@@ -59,6 +101,13 @@ document.addEventListener("DOMContentLoaded", function(event){
 
     // The user asks to submit this exercise.
     bt_submit.addEventListener ("onclick", function (e){
+        var ex_title = title.innerText;
+        var ex_diff = diff.value;
+        var text_exercise = latex_text_exercise.value;
+        var text_answer = latex_text_answer.value,
+        var educ_items_id = get_selected_skills();
+
+        submit_exercise(ex_title, ex_diff, text_exercise, text_answer, educ_items_id);
         console.log("Submitting...");
     });
 });

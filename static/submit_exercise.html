@@ -7,8 +7,8 @@
     <!-- Local Bootstrap integration-->
     <link href="main_style.css"
           rel="stylesheet">
-    <script src="exercise_submit.js"></script>
-    <script src="skills.js"></script>
+    <script type="module" src="exercise_submit.js"></script>
+    <script type="module" src="skills.js"></script>
     <script type="module" src="cookie_helper.js"></script>
     <!-- LaTeX Renderer with simple elements-->
     <script type="module">
@@ -24,8 +24,8 @@
     <ul class="navigation">
         <li><a href="#" class="navigation"><h1>ExerciseDB</h1></a></li>
         <li><a href="#">Home</a></li>
-        <li><a href="#">About</a></li>
-        <li><a href="#">Products</a></li>
+        <li><a href="">Exercises</a></li>
+        <li><a href="/exercise_submit">Submit exercise</a></li>
         <li><a href="#">Contact</a></li>
     </ul>
 </header>
@@ -103,10 +103,9 @@ Test $ax^2+bx+c=0$
 
         <div class="exercise-tags">
             <div>
-                <h2> Select appropriate tags for this exercise:</h2>
-                <ul id="skill_list">
-
-                </ul>
+                <fieldset id="skill_list" class="fieldset_educitems">
+                    <legend> Select appropriate tags for this exercise </legend>
+                </fieldset>
             </div>
             <div class="create_skill">
                 <h2> Skill not in the list ? Add it</h2>

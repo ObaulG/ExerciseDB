@@ -1,4 +1,4 @@
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta
 from fastapi import Depends, FastAPI, HTTPException, status
 import database.crud as crud
-
+from jose.exceptions import JOSEError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -15,6 +15,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+security = HTTPBearer()
 
 
 def verify_password(plain_password, hashed_password):
@@ -34,7 +36,16 @@ def authenticate_user(db, username: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+def decode_jwt(token: str) -> dict:
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return decoded_token if decoded_token["exp"] >= time.time() else None
+    except JWTError as e:
+        print(e)
+        return {}
+
+
+def create_jwt(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -43,5 +54,3 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
-

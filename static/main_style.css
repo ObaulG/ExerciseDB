@@ -133,3 +133,13 @@ latex-js {
     text-shadow: 0 0  6px rgba(0, 0, 0, 0.8);
 }
 
+legend {
+    background-color: #000000;
+    color: #ffffff;
+    padding: 3px 6px;
+}
+
+/* Where the user selects the EducItem*/
+fieldset_educitems{
+    overflow: scroll;
+}

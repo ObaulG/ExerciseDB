@@ -6,7 +6,7 @@ function handleErrors(response) {
 }
 
 
-function create_educ_item_selectable_element(id, title, descr){
+export function create_educ_item_selectable_element(id, title, descr){
 /*
 <div class="cat">
    <label>
@@ -17,6 +17,7 @@ function create_educ_item_selectable_element(id, title, descr){
     console.log("Adding EducItem " + title + " to the list...");
     var new_checkbox = document.createElement("input");
     new_checkbox.setAttribute("type", "checkbox");
+    new_checkbox.setAttribute("class", "skill_checkbox");
     new_checkbox.setAttribute("value", id);
     var span_title = document.createElement("span");
     span_title.innerText = title
@@ -33,7 +34,7 @@ function create_educ_item_selectable_element(id, title, descr){
 
 }
 
-async function retrieve_skill_list(){
+export async function retrieve_skill_list(){
     const resp = await fetch("/education-items", {
         method: "GET",
     })
@@ -45,7 +46,7 @@ async function retrieve_skill_list(){
         console.log(data);
         console.log("values: " + data.values().toString());
         // data should be a JSON holding a list of EducItemData
-        for (k in data){
+        for (var k in data){
             console.log(data);
             var id = data[k].id;
             var title = data[k].title;
@@ -99,12 +100,31 @@ async function submit_skill(title, type, description){
     });
 }
 
+// Returns an Array of EducItem.id
+export function get_selected_skills(){
+    var selected = document.getElementByClass("skill_checkbox");
+    var educitem_id_array = [];
+    for (var checkbox in selected){
+        if (checkbox.checked){
+            educitem_id_array.append(checkbox.value);
+        }
+    }
+    return educitem_id_array;
+}
+
+export function unselect_skills(){
+    var selected = document.getElementByClass("skill_checkbox");
+    for (var checkbox in selected){
+        checkbox.checked = false;
+    }
+}
+
 var skill_list;
 var new_skill_title;
 var new_skill_type;
 var new_skill_description;
 var bt_submit_skill;
-var selected_skills = [];
+
 document.addEventListener("DOMContentLoaded", function(event){
 
     skill_list = document.getElementById("skill_list");

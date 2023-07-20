@@ -3,14 +3,14 @@ import time
 import uvicorn
 from datetime import datetime, timedelta
 import logging
-from fastapi import Request, Depends, FastAPI, HTTPException
+from fastapi import Response, Request, Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from database import crud, models, schemas
 from database.databse import SessionLocal, engine
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from database.schemas import EducItemDataSubmit
@@ -20,14 +20,15 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from typing import Annotated
 from auth_logic import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, oauth2_scheme
-from auth_logic import authenticate_user, create_access_token
+from auth_logic import authenticate_user, create_jwt
 from database.schemas import User, Token, TokenData
 import database.crud as crud
-
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8000", "http://localhost:8000/"],
@@ -64,6 +65,12 @@ def retrieve_document_as_str(path: str) -> str:
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)):
+    """
+    Retrieve the user from the JWT he sends.
+    :param token: The JWT sent by the client.
+    :param db:
+    :return: Instance of user as stored in DB or None
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -72,7 +79,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Se
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        if username is None:
+        if username is None or payload.get("exp") >= time.time():
             raise credentials_exception
         token_data = TokenData(username=username)
     except JWTError:
@@ -104,6 +111,7 @@ async def add_process_time_header(request: Request, call_next):
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(
+    response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db)
 ):
@@ -115,9 +123,13 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
+    access_token = create_jwt(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
+
+    response.set_cookie(key="access_token",
+                        value=f"Bearer {access_token}",
+                        httponly=True)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -150,7 +162,9 @@ def get_educ_items_list(db: Session = Depends(get_db)):
 
 
 @app.post("/education-items", response_model=schemas.EducItemData)
-def submit_educ_item(educitem: EducItemDataSubmit, db: Session = Depends(get_db)):
+def submit_educ_item(educitem: EducItemDataSubmit,
+                     current_user: Annotated[User, Depends(get_current_user)],
+                     db: Session = Depends(get_db)):
     logging.info("submit educ item now")
     new_educ_item = crud.create_educ_item_from_submit(db=db, educ_item=educitem)
 
@@ -162,7 +176,7 @@ def create_static_exercise(exercise: schemas.StaticExerciseSubmit, db: Session =
     base_exercise = schemas.BaseExercise(title=exercise.title,
                                          difficulty=exercise.difficulty,
                                          author=exercise.author,
-                                         educ_items=exercise.educ_items)
+                                         educ_items_id=exercise.educ_items_id)
 
     db_base_exercise = crud.create_exercise_from_submit(db, base_exercise)
 
@@ -178,9 +192,6 @@ def create_static_exercise(exercise: schemas.StaticExerciseSubmit, db: Session =
 @app.get("/exercises/{exercise_id}", response_model=schemas.Exercise)
 def get_exercise_by_id(exercise_id: int, db: Session = Depends(get_db)):
     pass
-
-
-
 
 
 app.mount("/",
