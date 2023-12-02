@@ -4,12 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Submit an exercise</title>
-    <!-- Local Bootstrap integration-->
+
     <link href="main_style.css"
           rel="stylesheet">
-    <script type="module" src="exercise_submit.js"></script>
+    <script type="module">
+        import cytoscape from "./cytoscape.esm.min.js";
+    </script>
     <script type="module" src="skills.js"></script>
     <script type="module" src="cookie_helper.js"></script>
+    <script type="module" src="exercise_submit.js"></script>
+
     <!-- LaTeX Renderer with simple elements-->
     <script type="module">
         import { LaTeXJSComponent } from "https://cdn.jsdelivr.net/npm/latex.js/dist/latex.mjs"

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Skill editor</title>
+
+    <link href="main_style.css"
+          rel="stylesheet">
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script type="module" src="skill-graph.js"></script>
+    <script type="module" src="skill-editor.js"></script>
+    <script type="module" src="skills.js"></script>
+    <script type="module" src="cookie_helper.js"></script>
+
+</head>
+
+<body>
+<div class="main-container">
+    <header>
+        <ul class="navigation">
+            <li><a href="#" class="navigation"><h1>ExerciseDB</h1></a></li>
+            <li><a href="#">Home</a></li>
+            <li><a href="">Exercises</a></li>
+            <li><a href="/exercise_submit">Submit exercise</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+    </header>
+
+
+    <div class="window-container">
+
+        <div id="graph-editor">
+            <header>
+                <h1> Skill Graph name</h1>
+            </header>
+            <svg id="graph">
+
+            </svg>
+        </div>
+        <div class="side-window">
+            <header>
+                <h1> Object Editor</h1>
+            </header>
+            <datalist id="node-types">
+              <option value="Competency">
+              <option value="Skill">
+              <option value="Knowledge">
+            </datalist>
+
+            <div id="node-editor">
+                <label for="nodetitle">Node title</label>
+                <input type="text" class="form-control" id="nodetitle" placeholder="">
+                <label for="nodetype">Node type</label>
+                <input type="text" class="form-control" id="nodetype" list="node-types">
+            </div>
+            <div id="edge-editor">
+                <datalist id="edge-types">
+                  <option value="requires">
+                  <option value="composed">
+                  <option value="complexification">
+                </datalist>
+                <label for="edgetype">Node type</label>
+                <input type="text" class="form-control" id="edgetype" list="edge-types">
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+</body>
+</html>

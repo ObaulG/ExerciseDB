@@ -29,7 +29,6 @@ export function create_educ_item_selectable_element(id, title, descr){
     div_cat.setAttribute("id", "educ-item-"+String(id))
     div_cat.appendChild(label);
 
-
     skill_list.appendChild(div_cat);
 
 }
@@ -54,7 +53,6 @@ export async function retrieve_skill_list(){
 
             create_educ_item_selectable_element(id, title, descr);
         }
-
     })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
@@ -62,15 +60,15 @@ export async function retrieve_skill_list(){
 }
 
 
-async function submit_skill(title, type, description){
+export async function submit_skill(title, type, description){
 
     var skill_json = JSON.stringify({
         "title": title,
         "type": type,
         "description": description,
     });
-    console.log("Submitting EducItem...");
-    const resp = await fetch("/education_items", {
+    console.log("Submitting skill...");
+    const resp = await fetch("/education-items", {
         method: "POST",
         headers:{
             "Content-Type": "application/json"
@@ -102,7 +100,7 @@ async function submit_skill(title, type, description){
 
 // Returns an Array of EducItem.id
 export function get_selected_skills(){
-    var selected = document.getElementByClass("skill_checkbox");
+    var selected = document.getElementByClassName("skill_checkbox");
     var educitem_id_array = [];
     for (var checkbox in selected){
         if (checkbox.checked){
@@ -113,7 +111,7 @@ export function get_selected_skills(){
 }
 
 export function unselect_skills(){
-    var selected = document.getElementByClass("skill_checkbox");
+    var selected = document.getElementByClassName("skill_checkbox");
     for (var checkbox in selected){
         checkbox.checked = false;
     }

@@ -1,3 +1,6 @@
+import * as skills from './skills.js';
+
+
 function generate_latex_js_element(text_content){
     let new_latex_js = document.createElement("latex-js");
     new_latex_js.textContent = text_content;
@@ -68,6 +71,7 @@ async function submit_exercise(title, difficulty, body, answer, educ_items){
 console.log("Loaded...");
 document.addEventListener("DOMContentLoaded", function(event){
 
+
     var title = document.getElementById("extitle");
     var diff = document.getElementById("exdiff");
 
@@ -100,14 +104,15 @@ document.addEventListener("DOMContentLoaded", function(event){
     };
 
     // The user asks to submit this exercise.
-    bt_submit.addEventListener ("onclick", function (e){
+    bt_submit.onclick = function (e){
         var ex_title = title.innerText;
         var ex_diff = diff.value;
         var text_exercise = latex_text_exercise.value;
-        var text_answer = latex_text_answer.value,
-        var educ_items_id = get_selected_skills();
+        var text_answer = latex_text_answer.value;
+        var educ_items_id = skills.get_selected_skills();
 
+        console.log("before calling submit_exercise...");
         submit_exercise(ex_title, ex_diff, text_exercise, text_answer, educ_items_id);
         console.log("Submitting...");
-    });
+    };
 });

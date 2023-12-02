@@ -193,11 +193,12 @@ def create_static_exercise(exercise: schemas.StaticExerciseSubmit, db: Session =
 def get_exercise_by_id(exercise_id: int, db: Session = Depends(get_db)):
     pass
 
-
+# html / css pages
 app.mount("/",
           StaticFiles(directory=static_dir),
           name="static")
 
 
+# uvicorn main:app
 if __name__ == '__main__':
-    uvicorn.run("app:app")
+    uvicorn.run("main:app")

@@ -49,6 +49,12 @@ latex-js {
     align-items: left;
 }
 
+.window-container{
+    display: flex;
+    flex-flow: column wrap;
+    flex-direction: row;
+    align-items: left;
+}
 .exercise-form .exercise-tags{
     display: flex;
     flex-flow: column wrap;
@@ -142,4 +148,18 @@ legend {
 /* Where the user selects the EducItem*/
 fieldset_educitems{
     overflow: scroll;
+}
+
+#graph{
+    border-radius: 4px;
+    border: 2px solid black;
+    flex-grow: 8;
+    min-height: 400px;
+}
+
+#graph-editor{
+    display: flex;
+    flex-grow: 2;
+    flex-flow: column wrap;
+    justify-content: space-around;
 }
