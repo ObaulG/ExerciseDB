@@ -38,7 +38,7 @@
 
             </svg>
         </div>
-        <div class="side-window">
+        <div class="side-window" id="object-editor-window">
             <header>
                 <h1> Object Editor</h1>
             </header>
@@ -52,16 +52,21 @@
                 <label for="nodetitle">Node title</label>
                 <input type="text" class="form-control" id="nodetitle" placeholder="">
                 <label for="nodetype">Node type</label>
-                <input type="text" class="form-control" id="nodetype" list="node-types">
+                <input class="form-control" id="nodetype" list="node-types">
+                <label for="nodedescr">Node type</label>
+                <input type="text" class="form-control" id="nodedescr">
             </div>
             <div id="edge-editor">
                 <datalist id="edge-types">
                   <option value="requires">
-                  <option value="composed">
-                  <option value="complexification">
+                  <option value="comprises">
+                  <option value="isComplexificationOf">
+                  <option value="hasSkill">
+                  <option value="hasKnowledge">
+                  <option value="isleverOfUnderstandingOf">
                 </datalist>
                 <label for="edgetype">Node type</label>
-                <input type="text" class="form-control" id="edgetype" list="edge-types">
+                <input class="form-control" id="edgetype" list="edge-types">
             </div>
         </div>
     </div>

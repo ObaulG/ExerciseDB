@@ -11,8 +11,17 @@ export const EdgeType = {
     Requires : "requires",
     HasSkill: "hasSkill",
     HasKnowledge: "hasKnowledge",
-    IsComplexification: "isComplexificationOf",
+    IsComplexificationOf: "isComplexificationOf",
     IsLeverOfUnderstandingOf: "isLeverOfUnderstandingOf",
+}
+
+export const EdgeStringToType = {
+    "requires": EdgeType.Requires,
+    "comprises": EdgeType.Comprises,
+    "hasSkill": EdgeType.HasSkill,
+    "hasKnowledge": EdgeType.HasKnowledge,
+    "isComplexificationOf": EdgeType.IsComplexificationOf,
+    "isLeverOfUnderstandingOf": EdgeType.IsLeverOfUnderstandingOf,
 }
 
 const keyToNodeType = {
@@ -65,13 +74,20 @@ export default class Graph {
 
     };
 
-    this.listeners = [];
+    this.listeners = {};
 
     // Attributes defined in #draw
     this.circles = null;
 
     this.#draw();
 
+  }
+
+  listen(eventName, callback){
+    if (!eventName in this.listeners){
+        this.listeners[eventName] = [];
+    }
+    this.listeners[eventName].push(callback);
   }
 
   /**
@@ -81,8 +97,8 @@ export default class Graph {
   **/
   emit(eventName, eventData){
     let event = new Event(eventName, eventData);
-    if (this.listeners) {
-      this.listeners.forEach(callback => callback(eventData));
+    if (eventName in this.listeners) {
+      this.listeners[eventName].forEach(callback => callback(eventData));
     }
   }
 
@@ -424,6 +440,7 @@ export default class Graph {
           event.target.blur();
         }
       })
+      // when losing focus on the textbox
       .on("blur", (event, d) => {
         d.title = event.target.textContent;
         d3.select(event.target.parentElement).remove();
@@ -590,4 +607,6 @@ export default class Graph {
       { type: "text/plain;charset=utf-8" }
     );
   }
+
+
 }

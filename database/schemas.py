@@ -46,10 +46,30 @@ class EducItemNode(BaseModel):
     exercises: list
     lesson: list
 
-
+class EducItemList(BaseModel):
+    educ_item_id_list: list[int]
 class SkillReferential(BaseModel):
     educ_nodes: list[EducItemNode]
 
+
+class SkillGraphCreate(BaseModel):
+    title: str
+    description: str
+
+
+class SkillGraphNode(BaseModel):
+    graph_id: int
+    node_id: int
+
+class SkillGraphNodeData(SkillGraphNode):
+    node_data: EducItemData
+
+
+class SkillGraphEdge(BaseModel):
+    graph_id: int
+    node_start: int
+    node_end: int
+    link_name: str = ""
 
 class UserBase(BaseModel):
     pseudo: str

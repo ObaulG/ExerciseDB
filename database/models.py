@@ -39,6 +39,36 @@ class EducItemData(Base):
     description: Mapped[str] = mapped_column(index=True)
 
 
+class EducItemLink(Base):
+    """
+    Associative table between two EducItemData in a SkillGraph.
+    """
+    __tablename__ = "educitemlink"
+
+    item_start_id: Mapped[int] = mapped_column(ForeignKey("educitemdata.id"), primary_key=True)
+    item_end_id: Mapped[int] = mapped_column(ForeignKey("educitemdata.id"), primary_key=True)
+    skill_graph_id: Mapped[int] = mapped_column(ForeignKey("skillgraph.id"), primary_key=True)
+    link_name: Mapped[str] = mapped_column(default="")
+
+
+class SkillGraph(Base):
+
+    __tablename__ = "skillgraph"
+
+    id: Mapped[int] = mapped_column(autoincrement=True)
+    title: Mapped[str] = mapped_column(default="")
+    description: Mapped[str] = mapped_column(default="")
+
+class EducItemGraph(Base):
+    """
+    Associative table between an EducItemData and a Graph. An EducItem can be
+    present in several SkillGraph.
+    """
+    __tablename__ = "educitemgraph"
+
+    educitem_id: Mapped[int] = mapped_column(ForeignKey("educitemdata.id"), primary_key=True)
+    skill_graph_id: Mapped[int] = mapped_column(ForeignKey("skillgraph.id"), primary_key=True)
+
 class EducItemMastery(Base):
     """
     Associative table between a User an EducItemData : each user has

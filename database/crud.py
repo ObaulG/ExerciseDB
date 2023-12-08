@@ -35,6 +35,7 @@ def get_educ_items(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.EducItemData).offset(skip).limit(limit).all()
 
 
+# TODO: should be removed because we are adding a SkillGraph editor
 def create_educ_item_from_submit(db: Session, educ_item: schemas.EducItemDataSubmit):
     """
     Create an EducItem from a submission. Its id and code should be generated.
@@ -60,6 +61,48 @@ def get_educ_items(db: Session, skip: int = 0, limit: int = 1000):
     return db.query(models.EducItemData).offset(skip).limit(limit).all()
 
 
+# /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+# GraphSkill functions
+# /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+def create_new_graphskill(db: Session, graphcreate_data: schemas.SkillGraphCreate):
+    db_graph = models.SkillGraph(title=graphcreate_data.title, description=graphcreate_data.description)
+
+    db.add(db_graph)
+    db.commit()
+    db.refresh(db_graph)
+    return db_graph
+
+
+def get_graphskills(db: Session, skip: int = 0, limit: int = 1000):
+    return (db.query(models.SkillGraph)
+            .offset(skip)
+            .limit(limit)
+            .all())
+
+
+def get_graphskill_nodes(db: Session, graph_id: int):
+    return (db.query(models.EducItemGraph)
+            .filter(models.EducItemGraph.skill_graph_id == graph_id)
+            .all())
+
+
+def get_graphskill_edges(db: Session, graph_id: int):
+    return (db.query(models.EducItemLink)
+            .filter(models.EducItemLink.skill_graph_id == graph_id)
+            .all())
+
+
+def add_edge_in_graph(db: Session, edge: schemas.SkillGraphEdge):
+    pass
+def update_edge_from_graph(db: Session, graph_edge: schemas.SkillGraphEdge):
+    pass
+def remove_edge_from_graph(db: Session, graph_edge: schemas.SkillGraphEdge):
+    pass
+
+
+# /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+# Exercise functions
+# /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 def create_exercise_from_submit(db: Session, exercise: schemas.BaseExercise):
     db_exercise = models.Exercise(title=exercise.title,
                                   difficulty=exercise.difficulty,
@@ -93,3 +136,5 @@ def create_static_exercise_answer(db: Session, answer: schemas.StaticExerciseAns
     pass
 
 
+def get_exercises_from_skill(db: Session, answer: schemas.EducItemList):
+    pass
