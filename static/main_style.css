@@ -163,3 +163,10 @@ fieldset_educitems{
     flex-flow: column wrap;
     justify-content: space-around;
 }
+
+#graph-form{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}

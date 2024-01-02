@@ -5,9 +5,12 @@ from typing import Optional
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
-from .databse import Base
+from .database import Base
 
 
+"""
+Associative table between Exercise and EducItemId
+"""
 exercise_educ_item = Table(
     "exercise_educ_item",
     Base.metadata,
@@ -55,7 +58,7 @@ class SkillGraph(Base):
 
     __tablename__ = "skillgraph"
 
-    id: Mapped[int] = mapped_column(autoincrement=True)
+    id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     title: Mapped[str] = mapped_column(default="")
     description: Mapped[str] = mapped_column(default="")
 

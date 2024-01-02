@@ -1,3 +1,5 @@
+import * from 'exercisedb_methods.js';
+
 export const NodeType = {
 	Framework: "framework",
 	Competency: "competency",
@@ -30,15 +32,23 @@ const keyToNodeType = {
     "KeyR": NodeType.Ressource,
     "KeyS": NodeType.Skill,
 }
-/** See https://github.com/kldtz/graph-editor/blob/main/graph.js **/
+
+/** See https://github.com/kldtz/graph-editor/blob/main/graph.js
+    This class is based on the D3 hierarchy class. A Graph stores
+    Nodes and Edges separately.
+**/
 export default class Graph {
   constructor(opts) {
     this.svg = opts.svg;
+    // this is the graph_id as stored in the Neo4j database.
+    this.graph_id = null;
     this.nodes = opts.nodes;
     this.edges = this.#mapEdges(opts.edges);
     // current id == maximum id
+    // only for local purposes.
+    // DB ids are stored in properties
     this.nodeId = this.nodes.reduce(
-      (acc, curr) => (acc > curr.id ? acc : curr.id),
+      (acc, curr) => (acc > curr.local_id ? acc : curr.local_id),
       0
     );
     this.state = {
@@ -110,24 +120,32 @@ export default class Graph {
   #mapEdges(edges) {
     // map source and target id to respective node
     return edges.map((e) => ({
-      source: this.nodes.find((n) => n.id == e.source),
-      target: this.nodes.find((n) => n.id == e.target),
+      source: this.nodes.find((n) => n.local_id == e.source),
+      target: this.nodes.find((n) => n.local_id == e.target),
       label: e.label,
     }));
   }
 
   /* Deletes selected node and adjacent edges */
-  deleteNode(node) {
+  async deleteNode(node) {
+
+    var edges_to_remove = this.edges.filter((e) => e.source == node || e.target == node));
+
     this.nodes = this.nodes.filter((n) => node !== n);
     this.edges = this.edges.filter(
       (e) => e.source !== node && e.target !== node
     );
     this.redraw();
+
+    var resp = await delete_node(node)
+    // if the update is not validated, we rollback to the previous state.
   }
 
-  deleteEdge(edge) {
+  async deleteEdge(edge) {
     this.edges = this.edges.filter((e) => edge !== e);
     this.redrawEdges();
+
+    var resp = await delete_edge(edge)
   }
 
   clearSelection() {
@@ -136,30 +154,42 @@ export default class Graph {
     this.redraw();
   }
 
-  addNode(title, x, y) {
-    this.nodes.push({
+  async addNode(title, x, y) {
+    var node = {
       id: ++this.nodeId,
       title,
       x,
       y,
       node_type: NodeType.Competency,
       description: "",
-    });
+    }
+    this.nodes.push(node);
     this.redrawNodes();
+
+    var resp = await add_node(node)
   }
 
-  addSkillNode(title, x, y, type, descr){
-    this.nodes.push({
+  async addSkillNode(title, x, y, type, descr){
+    var node = {
       id: ++this.nodeId,
       title,
       x,
       y,
       node_type: type,
       description: descr,
-    });
+    }
+    this.nodes.push(node);
     this.redrawNodes();
+
+    var resp = await add_skill_node(node)
   }
 
+  async createEdge(edge){
+    this.edges.push(newEdge);
+    this.redrawEdges();
+
+    var resp = await create_edge(edge)
+  }
   /**
   Add the keydown event callback on the graph :
   - On DELETE_KEY down, will remove the current selected
@@ -175,7 +205,7 @@ export default class Graph {
   - when k-clicking, create a Knowledge Node,
   - when r-clicking, create a Resource Node
   **/
-  #draw() {
+  async #draw() {
     d3.select(window)
         .on("keydown", (event) => {
               switch (event.key) {
@@ -280,9 +310,8 @@ export default class Graph {
               !(edge.source === source && edge.target === target) &&
               !(edge.source === target && edge.target === source)
           );
-          var newEdge = { source: source, target: target };
-          this.edges.push(newEdge);
-          this.redrawEdges();
+          var newEdge = { source: source, target: target, label = "", properties = {}};
+          await createEdge(newEdge);
         }
       });
 
@@ -358,7 +387,7 @@ export default class Graph {
   redrawNodes() {
     this.circles
       .selectAll("g")
-      .data(this.nodes, (d) => d.id)
+      .data(this.nodes, (d) => d.local_id)
       .join(
         (enter) => this.#enterNodes(enter),
         (update) => this.#updateNodes(update),
@@ -412,7 +441,7 @@ export default class Graph {
   #editNodeLabel(d) {
     const selection = this.circles
       .selectAll("g")
-      .filter((dval) => dval.id === d.id);
+      .filter((dval) => dval.local_id === d.local_id);
     // hide current label
     const text = selection.selectAll("text").classed("hidden", true);
     // add intermediate editable paragraph
@@ -573,10 +602,10 @@ export default class Graph {
   }
 
   #edgeId(d) {
-    return String(d.source.id) + "+" + String(d.target.id);
+    return String(d.source.local_id) + "+" + String(d.target.local_id);
   }
 
-  clear() {
+  async clear() {
     const doDelete = window.confirm(
       "Do you really want to delete the whole graph?"
     );
@@ -585,21 +614,26 @@ export default class Graph {
       this.edges = [];
       this.redraw();
     }
+
+    var resp = await clear_graph()
   }
 
   load(nodes, edges) {
     this.nodeId = nodes.reduce((prev, curr) =>
-      prev.id > curr.id ? prev.id : curr.id
+      prev.local_id > curr.local_id ? prev.local_id : curr.local_id
     );
     this.nodes = nodes;
     this.edges = this.#mapEdges(edges);
     this.redraw();
   }
 
+  /**
+    TODO: serialize into specific objects to send to the Python back-end.
+  **/
   serialize() {
     const saveEdges = this.edges.map((edge) => ({
-      source: edge.source.id,
-      target: edge.target.id,
+      source: edge.source.local_id,
+      target: edge.target.local_id,
       label: edge.label,
     }));
     return new window.Blob(

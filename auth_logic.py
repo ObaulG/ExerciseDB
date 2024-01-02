@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timedelta
 from fastapi import Depends, FastAPI, HTTPException, status
 import database.crud as crud
+import database.crud_neo4j as crud_neo4j
 from jose.exceptions import JOSEError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -28,7 +29,7 @@ def get_password_hash(password):
 
 
 def authenticate_user(db, username: str, password: str):
-    user = crud.get_user_by_pseudo(username)
+    user = crud_neo4j.get_user_by_pseudo(username)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):

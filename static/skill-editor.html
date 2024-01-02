@@ -25,6 +25,10 @@
             <li><a href="/exercise_submit">Submit exercise</a></li>
             <li><a href="#">Contact</a></li>
         </ul>
+        <nav class="navigation" id="graph-nav">
+            <input type="button" name="create-new-graph" id="create-new-graph" value="Create new graph">
+            <input type="button" name="load-existing-graph" id="load-existing-graph" value="Load graph">
+        </nav>
     </header>
 
 
@@ -48,6 +52,28 @@
               <option value="Knowledge">
             </datalist>
 
+            <div id="graph-form">
+                <h1>Create a new graph</h1>
+                <label for="graph-title">Graph title</label>
+                <input type="text" class="graph-descr" id="graph-title" placeholder="">
+                <label for="graph-descr">Graph description</label>
+                <input class="form-control" id="graph-descr">
+                <input type="button" name="send-graph-create-request" id="send-graph-create-request" value="Create">
+            </div>
+
+            <div id="graph-list">
+                <table>
+                    <thead><tr>
+                        <th>#</th>
+                        <th>Graph title</th>
+                        <th>Description</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="graph-table-content"></tbody>
+                </table>
+            </div>
+
             <div id="node-editor">
                 <label for="nodetitle">Node title</label>
                 <input type="text" class="form-control" id="nodetitle" placeholder="">
@@ -55,6 +81,10 @@
                 <input class="form-control" id="nodetype" list="node-types">
                 <label for="nodedescr">Node type</label>
                 <input type="text" class="form-control" id="nodedescr">
+
+                <div class="json-properties">
+
+                </div>
             </div>
             <div id="edge-editor">
                 <datalist id="edge-types">
@@ -67,6 +97,9 @@
                 </datalist>
                 <label for="edgetype">Node type</label>
                 <input class="form-control" id="edgetype" list="edge-types">
+                <div class="json-properties">
+
+                </div>
             </div>
         </div>
     </div>

@@ -7,7 +7,7 @@ from fastapi import Response, Request, Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from database import crud, models, schemas
-from database.databse import SessionLocal, engine
+from database.database import SessionLocal, engine
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
@@ -24,6 +24,9 @@ from auth_logic import authenticate_user, create_jwt
 from database.schemas import User, Token, TokenData
 import database.crud as crud
 
+from database.crud_neo4j import Neo4jManager
+
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -37,6 +40,13 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"]
 )
+
+# Neo4j configuration
+NEO4J_URI = "bolt://localhost:7687"
+NEO4J_USER = "Obaul"
+NEO4J_PASSWORD = "48bfcdez32x1"
+
+
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 
 
@@ -55,6 +65,15 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# Dependency to get the Neo4j connection
+def get_neo4j_db():
+    exercise_db = Neo4jManager(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
+    try:
+        yield exercise_db
+    finally:
+        exercise_db.close()
 
 
 def retrieve_document_as_str(path: str) -> str:
@@ -90,8 +109,41 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Se
     return user
 
 
+async def get_current_user_neo4j(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_neo4j_db)):
+    """
+    Retrieve the user from the JWT he sends.
+    :param token: The JWT sent by the client.
+    :param db:
+    :return: Instance of User as a schemas.Node
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None or payload.get("exp") >= time.time():
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = Neo4jManager.get_user_by_pseudo(db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
 async def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)]
+):
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+async def get_current_active_user_neo4j(
+    current_user: Annotated[User, Depends(get_current_user_neo4j)]
 ):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
@@ -113,7 +165,7 @@ async def add_process_time_header(request: Request, call_next):
 async def login_for_access_token(
     response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_neo4j_db)
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -134,59 +186,100 @@ async def login_for_access_token(
 
 
 @app.post("/user/create_account", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_email(db, email=user.email)
-    if db_user:
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_neo4j_db)):
+    db_user_by_email = db.get_user_by_email(db, email=user.email)
+    if db_user_by_email:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return crud.create_user(db=db, user=user)
+    db_user_by_pseudo = db.get_user_by_pseudo(db, email=user.pseudo)
+    if db_user_by_pseudo:
+        raise HTTPException(status_code=400, detail="Pseudo is already used.")
+    return db.create_user(db=db, user=user)
 
 
 @app.get("/users/all", response_model=list[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    users = crud.get_users(db, skip=skip, limit=limit)
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_neo4j_db)):
+    users = db.get_users(db, skip=skip, limit=limit)
     return users
 
 
 @app.get("/users/{user_id}", response_model=schemas.User)
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    db_user = crud.get_user(db, user_id=user_id)
+def read_user_by_id(user_id: int, db: Session = Depends(get_neo4j_db)):
+    db_user = db.get_user(db, user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
+@app.get("/educitem/framework/all", response_model = schemas.ListSkillGraphData)
+def get_educframeworks(skip: int = 0, limit: int = 100, db: Neo4jManager = Depends(get_neo4j_db)):
+    educ_frameworks = db.get_educ_frameworks()
+    return educ_frameworks
 
-@app.get("/education-items", response_model=list[schemas.EducItemData])
+
+@app.get("/educitem/framework/{framework_id}", response_model=list[schemas.SkillGraphData])
+def get_educframework_data_by_id(framework_id: str, db: Neo4jManager = Depends(get_neo4j_db)):
+    educ_framework=db.get_educ_framework_by_id(framework_id)
+    return educ_framework
+
+@app.get("/skillgraph/{framework_id}", response_model=schemas.GraphNodesEdges)
+def get_skill_graph(framework_id: str, db: Neo4jManager = Depends(get_neo4j_db)):
+    skill_graph = db.get_skill_graph(framework_id)
+    return skill_graph
+
+@app.post("/skillgraph", response_model=schemas.GraphNodesEdges)
+def create_skill_graph(create_form: schemas.SkillGraphCreate, db: Neo4jManager = Depends(get_neo4j_db)):
+    return db.create_educ_framework(create_form.title, create_form.description)
+@app.get("/educitem/all", response_model = list[schemas.EducItemData])
 def get_educ_items_list(db: Session = Depends(get_db)):
     educ_items = crud.get_educ_items(db)
     return educ_items
 
 
-@app.post("/education-items", response_model=schemas.EducItemData)
+@app.post("/edge", response_model=schemas.Relationship)
+def add_edge_in_skill_graph(edge: schemas.Edge,
+                            current_user: Annotated[User, Depends(get_current_user)],
+                            db: Session = Depends(get_neo4j_db)):
+    pass
+
+@app.post("/edge/{edge_id}", response_model=schemas.Relationship)
+def delete_edge_in_skill_graph(edge_id: str,
+                               current_user: Annotated[User, Depends(get_current_user)],
+                               db: Session = Depends(get_neo4j_db)):
+    pass
+
+@app.post("/educitem", response_model=schemas.EducItemData)
 def submit_educ_item(educitem: EducItemDataSubmit,
                      current_user: Annotated[User, Depends(get_current_user)],
-                     db: Session = Depends(get_db)):
+                     db: Session = Depends(get_neo4j_db)):
     logging.info("submit educ item now")
     new_educ_item = crud.create_educ_item_from_submit(db=db, educ_item=educitem)
 
     return new_educ_item
 
 
-@app.post("/exercises", response_model=schemas.Exercise)
-def create_static_exercise(exercise: schemas.StaticExerciseSubmit, db: Session = Depends(get_db)):
+@app.get("/exercise/all", response_model=schemas.Exercises)
+def get_exercises(db: Session = Depends(get_neo4j_db)):
+    pass
+@app.post("/exercise/static", response_model=schemas.Exercise)
+def create_static_exercise(exercise: schemas.StaticExerciseSubmit,
+                           current_user: Annotated[User, Depends(get_current_user)],
+                           db: Session = Depends(get_neo4j_db)):
+    """
+
+    :param exercise:
+    :param current_user:
+    :param db:
+    :return:
+    """
+    user_id = current_user.id
     base_exercise = schemas.BaseExercise(title=exercise.title,
                                          difficulty=exercise.difficulty,
-                                         author=exercise.author,
+                                         author=user_id,
                                          educ_items_id=exercise.educ_items_id)
 
-    db_base_exercise = crud.create_exercise_from_submit(db, base_exercise)
+    db_base_exercise = db.create_exercise(base_exercise)
 
-    # the exercise now has an id, we can create the entry in static_exercise
-    static_exercise = schemas.StaticExercise(id_exercise=db_base_exercise.id_exercise,
-                                             content=exercise.ex_content,
-                                             answers=[exercise.ex_answer])
-    db_static_answer = crud.create_static_exercise(static_exercise)
 
-    return base_exercise
+    return db_base_exercise
 
 
 @app.get("/exercises/{exercise_id}", response_model=schemas.Exercise)
