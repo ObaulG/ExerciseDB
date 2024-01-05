@@ -8,7 +8,7 @@ export function check_cookie_existence(cookie_name) {
     // this string. It does NOT change the value of the current string
 
     // String.startsWith() explains itself lol.
-    return document.cookie.split(';').some((item) => item.trim().startsWith(cookie_name + '='))
+    return document.cookie.split(';').some((item) => item.trim().startsWith(cookie_name + '='));
 }
 
 // https://www.w3schools.blog/get-cookie-by-name-javascript-js

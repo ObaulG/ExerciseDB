@@ -19,8 +19,8 @@ base_properties = ['created_by', 'created_time', 'id']
 
 class Neo4jManager:
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
-
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
+        self.database = "neo4j"
     def close(self):
         self._driver.close()
 
@@ -46,18 +46,12 @@ class Neo4jManager:
         :param label: String of the wanted label.
         :return: a list of Nodes
         """
-        cypher = f"""
-                MATCH (node: $label)
-                RETURN ID(node) as id, LABELS(node) as labels, node
-                """
+        cypher = "MATCH (node:$label) RETURN ID(node) as id, LABELS(node) as labels, node"
+        records, summary, keys = self._driver.execute_query(cypher,
+                                                            label=label,
+                                                            database_=self.database)
 
-        with self._driver.session() as session:
-            result = session.run(query=cypher,
-                                 parameters={
-                                     "label": label
-                                 })
-
-        node_list = self.generate_node_list_from_query_result(result)
+        node_list = self.generate_node_list_from_query_result(records)
 
         # Return Nodes response with collection as list
         return schemas.Nodes(nodes=node_list)
@@ -528,14 +522,14 @@ class Neo4jManager:
         :return:
         """
 
-        cypher = f"""MATCH p = (:EducFramework {"id": $id})-[r*0..]->(x)
-                     WHERE ALL(rel IN relationships(p) WHERE type(rel) IN {relationship_types})
+        cypher =  """MATCH p = (:EducFramework {"id": $id})-[r*0..]->(x)
+                     WHERE ALL(rel IN relationships(p) WHERE type(rel) IN $relationship_types)
                      WITH collect(DISTINCT id(x)) as nodes, [r in collect(distinct last(r)) | [id(startNode(r)),id(endNode(r))]] as rels
                      RETURN size(nodes), size(rels), nodes, rels;"""
 
         with self._driver.session() as session:
             result = session.run(query=cypher,
-                                 parameters={'id': id})
+                                 parameters={'id': id, 'relationship_types': relationship_types})
             node_data = result.data()
 
         return schemas.GraphNodesEdges(**node_data)

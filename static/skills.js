@@ -129,15 +129,15 @@ document.addEventListener("DOMContentLoaded", function(event){
     new_skill_title = document.getElementById("skill_title");
     new_skill_type = document.getElementById("educ_item_type");
     new_skill_description = document.getElementById("skill_description");
-    bt_submit_skill = document.getElementById("bt_submit_skill");
+    //bt_submit_skill = document.getElementById("bt_submit_skill");
 
-    bt_submit_skill.onclick = function(e){
+    /*bt_submit_skill.onclick = function(e){
         let title = new_skill_title.value;
         let type = Number(new_skill_type.value);
         let descr = new_skill_description.value;
 
         submit_skill(title, type, descr);
-    };
+    };*/
 
     var resp = retrieve_skill_list();
 });

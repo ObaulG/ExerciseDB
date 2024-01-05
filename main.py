@@ -1,4 +1,4 @@
-import os
+import os, sys
 import time
 import uvicorn
 from datetime import datetime, timedelta
@@ -43,9 +43,9 @@ app.add_middleware(
 
 # Neo4j configuration
 NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "Obaul"
-NEO4J_PASSWORD = "48bfcdez32x1"
-
+NEO4J_USER = "neo4j"
+#NEO4J_PASSWORD = "ACxJZm6EUr3ykwgIApuwVHj3plkekfJNIx_2jR27GAY"
+NEO4J_PASSWORD = "48bfcdez32"
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 
@@ -57,6 +57,10 @@ logging.config.fileConfig('logging.conf', disable_existing_loggers=False)
 logger = logging.getLogger(__name__)  # the __name__ resolve to "main" since we are at the root of the project.
                                       # This will get the root logger since no logger in the configuration has this name.
 
+#handler = logging.StreamHandler(sys.stdout)
+#handler.setLevel(logging.DEBUG)
+#logging.getLogger("neo4j").addHandler(handler)
+#logging.getLogger("neo4j").setLevel(logging.DEBUG)
 
 # Dependency
 def get_db():
@@ -259,6 +263,7 @@ def submit_educ_item(educitem: EducItemDataSubmit,
 @app.get("/exercise/all", response_model=schemas.Exercises)
 def get_exercises(db: Session = Depends(get_neo4j_db)):
     pass
+
 @app.post("/exercise/static", response_model=schemas.Exercise)
 def create_static_exercise(exercise: schemas.StaticExerciseSubmit,
                            current_user: Annotated[User, Depends(get_current_user)],

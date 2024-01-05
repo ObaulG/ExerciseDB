@@ -23,7 +23,7 @@ async function add_node(node){
     .then(response => {
         var response = response.json();
         return response;
-        })
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     })
@@ -35,10 +35,11 @@ async function add_node(node){
             //nodes: Nodes
             //relationships: Relationships
         return data
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     });
-    return resp
+    return resp;
 }
 
 async function delete_node(node){
@@ -54,7 +55,7 @@ async function delete_node(node){
     .then(response => {
         var response = response.json();
         return response;
-        })
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     })
@@ -66,7 +67,8 @@ async function delete_node(node){
             //relationships_count: Optional[int]
             //nodes: Nodes
             //relationships: Relationships
-        return data
+        return data;
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     });
@@ -86,7 +88,7 @@ async function add_skill_node(node){
     .then(response => {
         var response = response.json();
         return response;
-        })
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     })
@@ -97,11 +99,12 @@ async function add_skill_node(node){
             //relationships_count: Optional[int]
             //nodes: Nodes
             //relationships: Relationships
-        return data
+        return data;
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     });
-    return resp
+    return resp;
 }
 
 async function create_edge(edge){
@@ -117,7 +120,7 @@ async function create_edge(edge){
     .then(response => {
         var response = response.json();
         return response;
-        })
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     })
@@ -128,11 +131,12 @@ async function create_edge(edge){
             //relationships_count: Optional[int]
             //nodes: Nodes
             //relationships: Relationships
-        return data
+        return data;
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     });
-    return resp
+    return resp;
 }
 
 async function delete_edge(edge){
@@ -148,7 +152,7 @@ async function delete_edge(edge){
     .then(response => {
         var response = response.json();
         return response;
-        })
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     })
@@ -160,9 +164,10 @@ async function delete_edge(edge){
             //relationships_count: Optional[int]
             //nodes: Nodes
             //relationships: Relationships
-        return data
+        return data;
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     });
-    return resp
+    return resp;
 }

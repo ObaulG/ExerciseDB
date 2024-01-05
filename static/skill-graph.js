@@ -1,4 +1,4 @@
-import * from 'exercisedb_methods.js';
+import * as db_methods from './exercisedb_methods.js';
 
 export const NodeType = {
 	Framework: "framework",
@@ -129,7 +129,7 @@ export default class Graph {
   /* Deletes selected node and adjacent edges */
   async deleteNode(node) {
 
-    var edges_to_remove = this.edges.filter((e) => e.source == node || e.target == node));
+    var edges_to_remove = this.edges.filter((e) => e.source == node || e.target == node);
 
     this.nodes = this.nodes.filter((n) => node !== n);
     this.edges = this.edges.filter(
@@ -137,7 +137,7 @@ export default class Graph {
     );
     this.redraw();
 
-    var resp = await delete_node(node)
+    var resp = await db_methods.delete_node(node)
     // if the update is not validated, we rollback to the previous state.
   }
 
@@ -145,7 +145,7 @@ export default class Graph {
     this.edges = this.edges.filter((e) => edge !== e);
     this.redrawEdges();
 
-    var resp = await delete_edge(edge)
+    var resp = await db_methods.delete_edge(edge)
   }
 
   clearSelection() {
@@ -166,7 +166,7 @@ export default class Graph {
     this.nodes.push(node);
     this.redrawNodes();
 
-    var resp = await add_node(node)
+    var resp = await db_methods.add_node(node)
   }
 
   async addSkillNode(title, x, y, type, descr){
@@ -181,14 +181,14 @@ export default class Graph {
     this.nodes.push(node);
     this.redrawNodes();
 
-    var resp = await add_skill_node(node)
+    var resp = await db_methods.add_skill_node(node)
   }
 
   async createEdge(edge){
     this.edges.push(newEdge);
     this.redrawEdges();
 
-    var resp = await create_edge(edge)
+    var resp = await db_methods.create_edge(edge)
   }
   /**
   Add the keydown event callback on the graph :
@@ -310,8 +310,8 @@ export default class Graph {
               !(edge.source === source && edge.target === target) &&
               !(edge.source === target && edge.target === source)
           );
-          var newEdge = { source: source, target: target, label = "", properties = {}};
-          await createEdge(newEdge);
+          var newEdge = { source: source, target: target, label: "", properties: {}};
+          db_methods.createEdge(newEdge);
         }
       });
 
@@ -615,7 +615,7 @@ export default class Graph {
       this.redraw();
     }
 
-    var resp = await clear_graph()
+    var resp = await db_methods.clear_graph()
   }
 
   load(nodes, edges) {

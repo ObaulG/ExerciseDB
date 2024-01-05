@@ -99,9 +99,9 @@ function update_graph_list_table(){
       // Add any action button or link here
       cellAction.innerHTML = `<button onclick="editGraph('${graphId}')">Edit</button>`;
     }
-  }
-
 }
+
+
 async function create_new_graph(title, descr){
     var graph_form_json = JSON.stringify({
         "title": title,
@@ -173,7 +173,7 @@ async function load_skill_graph_data_from_db(graph_id){
         graph.load(json_converted.nodes, json_converted.edges);
         console.log("Graph loaded!");
         db_graph_id = graph_id;
-
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     });
@@ -182,7 +182,7 @@ async function load_skill_graph_data_from_db(graph_id){
 async function get_all_skillgraphs_from_db(){
 
     console.log("Retrieving skill graphs...");
-    const resp = await fetch("/skillgraph/all", {
+    const resp = await fetch("/educitem/framework/all", {
         method: "GET",
     })
     .then(handleErrors)
@@ -212,8 +212,7 @@ async function get_all_skillgraphs_from_db(){
         for (node in nodes) {
             existing_graphs[node.node_id] = node;
         }
-    }
-
+    })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
     });
@@ -298,7 +297,9 @@ window.onload = function(){
         {source: 1, target: 5, label: "comprises", properties:{} },
     ]
 **/
+    console.log("Loading...");
     get_all_skillgraphs_from_db();
+
     node_form = document.getElementById("node-editor");
     edge_form = document.getElementById("edge-editor");
     node_form.hidden = true;
@@ -322,9 +323,6 @@ window.onload = function(){
     graph.listen("nodeClick", onGraphNodeClick);
     graph.listen("edgeClick", onGraphEdgeClick);
     graph.listen("nothingClick", onGraphNothingClick);
-
-    load_skill_graph_data_from_db(graph_test_id)
-
 
     /** When clicking outside of the side window, updating the graph object.**/
     document.addEventListener('click', function(event) {

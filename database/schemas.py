@@ -155,7 +155,7 @@ class StaticExercise(BaseModel):
 
 
 class Exercises(BaseModel):
-    exercises = list[StaticExercise]
+    exercises: list[StaticExercise]
 
 # Node response models
 class NodeBase(BaseModel):
