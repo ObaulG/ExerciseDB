@@ -27,18 +27,20 @@ class Neo4jManager:
     def generate_node_list_from_query_result(self, query_result: Result):
         node_list = []
         for record in query_result:
-
-            node = record["n"]
-            node_data = record.data()
-            labels = node.labels
+            print(record)
+            record_data = record.data()
+            print(record_data)
+            node_data = record_data["node"]
+            labels = record_data["labels"]
             # Create node for each result in query
-            node = schemas.Node(node_id=node_data['id'],
+            # note: str conversion just in case.
+            node = schemas.Node(node_id=str(node_data['id']),
                                 labels=labels,
                                 properties=node_data)
 
             # Append each node result into Nodes list
             node_list.append(node)
-        return node_list
+        return schemas.Nodes(nodes=node_list)
 
     def generic_get_nodes(self, label: str):
         """
@@ -46,15 +48,17 @@ class Neo4jManager:
         :param label: String of the wanted label.
         :return: a list of Nodes
         """
-        cypher = "MATCH (node:$label) RETURN ID(node) as id, LABELS(node) as labels, node"
+        cypher = f"MATCH (node :{label} ) RETURN ID(node) as id, LABELS(node) as labels, node"
         records, summary, keys = self._driver.execute_query(cypher,
-                                                            label=label,
                                                             database_=self.database)
 
         node_list = self.generate_node_list_from_query_result(records)
 
+        print("The query `{query}` returned {records_count} records in {time} ms.".format(query=summary.query,
+                                                                                          records_count=len(records),
+                                                                                          time=summary.result_available_after))
         # Return Nodes response with collection as list
-        return schemas.Nodes(nodes=node_list)
+        return node_list
 
     def create_node(self, label: str, node_attributes: dict, user: schemas.UserNeo4j):
         # Check that node is not User
@@ -483,7 +487,7 @@ class Neo4jManager:
     # EducFramework methods
     # /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
     def get_educ_frameworks(self):
-        return self.generic_get_nodes("EducFrameworks")
+        return self.generic_get_nodes("EducFramework")
 
     def get_educ_framework_by_id(self, id: str):
         cypher = f"""

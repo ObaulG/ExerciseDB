@@ -154,15 +154,15 @@ async def get_current_active_user_neo4j(
     return current_user
 
 
-@app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
-
-    start_time = time.time()
-    response = await call_next(request)
-    print(request.method, request.url)
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
+# @app.middleware("http")
+# async def add_process_time_header(request: Request, call_next):
+#     print(call_next)
+#     start_time = time.time()
+#     response = await call_next(request)
+#     print(request.method, request.url)
+#     process_time = time.time() - start_time
+#     response.headers["X-Process-Time"] = str(process_time)
+#     return response
 
 
 @app.post("/token", response_model=Token)
@@ -213,7 +213,7 @@ def read_user_by_id(user_id: int, db: Session = Depends(get_neo4j_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
-@app.get("/educitem/framework/all", response_model = schemas.ListSkillGraphData)
+@app.get("/educitem/framework/all", response_model = schemas.Nodes)
 def get_educframeworks(skip: int = 0, limit: int = 100, db: Neo4jManager = Depends(get_neo4j_db)):
     educ_frameworks = db.get_educ_frameworks()
     return educ_frameworks

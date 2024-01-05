@@ -16,6 +16,12 @@ var existing_graphs = {};
 const graph_test_id = 1;
 
 
+function handleErrors(response) {
+    if (!response.ok) {
+        throw Error(response.statusText);
+    }
+    return response;
+}
 
 /**
     TODO: Should also display properties and labels.
@@ -210,7 +216,8 @@ async function get_all_skillgraphs_from_db(){
         console.log(nodes.length + " nodes received.")
         // We erase previous data received.
         for (node in nodes) {
-            existing_graphs[node.node_id] = node;
+            console.log(node);
+            existing_graphs[node.node_id] = node.properties;
         }
     })
     .catch(function(error) {

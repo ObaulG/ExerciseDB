@@ -58,7 +58,7 @@ class SkillReferential(BaseModel):
 
 class SkillGraphCreate(BaseModel):
     title: str
-    description: str
+    description: Optional[str]
 
 class SkillGraphData(SkillGraphCreate):
     id: str
@@ -168,7 +168,7 @@ class Node(NodeBase):
 
 
 class Nodes(BaseModel):
-    nodes: List[Node]
+    nodes: list[Node]
 
 class Relationship(BaseModel):
     relationship_id: int
