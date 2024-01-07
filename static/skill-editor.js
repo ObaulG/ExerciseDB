@@ -1,13 +1,14 @@
-import * as skills from './skills.js';
+//import * as skills from './skills.js';
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import Graph from './skill-graph.js';
 import NodeType from './skill-graph.js';
-
+import * as notifCreator from './notification_creator.js';
 
 var side_window;
 var node_form;
 var edge_form;
 var graph_list;
+var graph_table;
 var graph_create_form;
 var node_types;
 var object_edited = null;
@@ -77,19 +78,22 @@ function update_changes_to_graph(graph){
     It should retrieve this graph data.
 **/
 async function editGraph(graph_id){
+    console.log("Loading graph " + graph_id)
     load_skill_graph_data_from_db(graph_id)
 }
 /**
     Graph data is stored in existing_graphs
 **/
 function update_graph_list_table(){
-    const tbody = document.getElementById('graph-table-content');
-    tbody.innerHTML = ''; // Clear the content
+    console.log("Updating graph table");
+    graph_table.innerHTML = ''; // Clear the content
     const graphIds = Object.keys(existing_graphs);
+    console.log(graphIds);
     for (let i = 0; i < graphIds.length; i++) {
       const graphId = graphIds[i];
-      const graph = existing_graphs[graphId].properties;
-      const row = tbody.insertRow(i);
+      const graph = existing_graphs[graphId];
+      //console.log(graph);
+      const row = graph_table.insertRow(i);
 
       // Populate cells
       const cellNumber = row.insertCell(0);
@@ -103,7 +107,7 @@ function update_graph_list_table(){
 
       const cellAction = row.insertCell(3);
       // Add any action button or link here
-      cellAction.innerHTML = `<button onclick="editGraph('${graphId}')">Edit</button>`;
+      cellAction.innerHTML = `<button id="${graphId}">Edit</button>`;
     }
 }
 
@@ -139,7 +143,7 @@ async function create_new_graph(title, descr){
         create_educ_item_selectable_element(id, title, descr);
     })
     .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
+        notifCreator.generate_and_call_error_notif("New graph error", 'An error has occured... : ' + error.message);
     });
 }
 
@@ -149,7 +153,7 @@ async function create_new_graph(title, descr){
 **/
 async function load_skill_graph_data_from_db(graph_id){
 
-    const resp = await fetch("/skillgraph/{graph_id}", {
+    const resp = await fetch("/skillgraph/"+graph_id, {
         method: "GET"
     })
     .then(handleErrors)
@@ -158,7 +162,7 @@ async function load_skill_graph_data_from_db(graph_id){
         return response;
         })
     .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
+        notifCreator.generate_and_call_error_notif("Load graph error", 'An error has occured... : ' + error.message);
     })
     .then(data => {
         console.log(data);
@@ -177,11 +181,11 @@ async function load_skill_graph_data_from_db(graph_id){
 
         var json_converted = convert_neo4j_graph(nodes, relationships);
         graph.load(json_converted.nodes, json_converted.edges);
-        console.log("Graph loaded!");
+        notifCreator.generate_and_call_success_notif("Response error", 'An error has occured... : ' + error.message);
         db_graph_id = graph_id;
     })
     .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
+       notifCreator.generate_and_call_error_notif("Process error", 'An error has occured... : ' + error.message);
     });
 }
 
@@ -197,7 +201,7 @@ async function get_all_skillgraphs_from_db(){
         return response;
         })
     .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
+        notifCreator.generate_and_call_error_notif("Get skillgraph error", error.message);
     })
     .then(data => {
         console.log(data);
@@ -213,15 +217,18 @@ async function get_all_skillgraphs_from_db(){
                 nodes: List[Node]
         **/
         var nodes = data["nodes"];
-        console.log(nodes.length + " nodes received.")
-        // We erase previous data received.
-        for (node in nodes) {
-            console.log(node);
+
+
+        // We update the dict with the data received
+        for (const [node_id, node] of Object.entries(nodes)) {
+            //console.log(node);
             existing_graphs[node.node_id] = node.properties;
         }
+        update_graph_list_table();
+        notifCreator.generate_and_call_success_notif("Skillgraphs downloaded", nodes.length + " nodes received.");
     })
     .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
+        notifCreator.generate_and_call_error_notif("Get skillgraph error", error.message);
     });
 }
 
@@ -241,8 +248,8 @@ class Relationship(BaseModel):
     properties: Optional[dict] = None
 **/
 
-    new_nodes_array = []
-    new_edges_array = []
+    var new_nodes_array = [];
+    var new_edges_array = [];
 
     nodes.forEach((node) => {
         new_nodes_array.push({
@@ -311,6 +318,7 @@ window.onload = function(){
     edge_form = document.getElementById("edge-editor");
     node_form.hidden = true;
     edge_form.hidden = true;
+    graph_create_form = document.getElementById("graph-form");
     graph_create_form.hidden = true;
     side_window = document.getElementById("object-editor-window");
     graph_list = document.getElementById("graph-list");
@@ -343,6 +351,23 @@ window.onload = function(){
           graph.redrawEdges();
         }
     });
+
+    graph_table = document.getElementById("graph-table-content");
+    // Listen to dynamically created buttons in the graph list
+    graph_table.onclick = function(e) {
+
+        // Thanks to David Walsh
+        // https://davidwalsh.name/event-delegate
+        // e.target is the clicked element!
+        // If it was a list item
+        var clicked_button = e.target;
+        console.log("Click detected from : " + e.target + " nodeName: " + clicked_button.nodeName);
+        if(clicked_button && clicked_button.nodeName == "BUTTON") {
+            // List item found!
+            editGraph(clicked_button.id);
+        }
+     };
+
     graph_create_form = document.getElementById("graph-form");
     graph_create_form.hidden = true;
     graph_create_form.onblur = function(){
@@ -352,18 +377,30 @@ window.onload = function(){
     };
 
     var bt_create_graph = document.getElementById("create-new-graph");
+    var bt_submit_new_graph = document.getElementById("send-graph-create-request")
     var bt_load_graph = document.getElementById("load-existing-graph");
 
-    bt_create_graph.onClick = function(){
-        graph_create_form.hidden = false;
+    bt_create_graph.onclick = function(){
+        if (graph_create_form.hidden){
+            graph_create_form.hidden = false;
+            graph_list.hidden = true;
+        }
+        else {
+            graph_create_form.hidden = true;
+            graph_list.hidden = true;
+        }
+    };
+
+    bt_submit_new_graph.onclick = function(){
         var graph_create_title = document.getElementById("graph-title");
         var graph_create_descr = document.getElementById("graph-descr");
         create_new_graph(graph_create_title.text, graph_create_descr.text);
         console.log("Graph creation request sent");
-    };
+    }
 
-    bt_load_graph.onClick = function(){
-
+    bt_load_graph.onclick = function(){
+        graph_list.hidden = false;
+        graph_create_form.hidden = true;
     };
 
 }

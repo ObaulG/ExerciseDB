@@ -10,9 +10,11 @@ from uuid import uuid4
 # List of acceptable node labels and relationship types
 node_labels = ['User', 'Admin', 'Developper', 'EducFramework', 'EducItem', 'Competency', 'Knowledge', "Skill",
                'Exercise', "Course", "Resource"]
-relationship_types = ['hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency", "requires",
+relationship_types = ['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency", "requires",
                       "isComplexificationOf", "isLeverOfUnderstandingOf", "masters", "needs"]
 
+relationships_in_skillgraph=['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency", "requires",
+                              "isComplexificationOf", "isLeverOfUnderstandingOf"]
 # Used for validation to ensure they are not overwritten
 base_properties = ['created_by', 'created_time', 'id']
 
@@ -526,17 +528,54 @@ class Neo4jManager:
         :return:
         """
 
-        cypher =  """MATCH p = (:EducFramework {"id": $id})-[r*0..]->(x)
+        """
+        if we only want to get the ids of nodes and relationships...
+        cypher =  MATCH p = (:EducFramework {id: $id})-[r*0..]->(x)
                      WHERE ALL(rel IN relationships(p) WHERE type(rel) IN $relationship_types)
                      WITH collect(DISTINCT id(x)) as nodes, [r in collect(distinct last(r)) | [id(startNode(r)),id(endNode(r))]] as rels
-                     RETURN size(nodes), size(rels), nodes, rels;"""
+                     RETURN size(nodes), size(rels), nodes, rels
+        """
 
-        with self._driver.session() as session:
-            result = session.run(query=cypher,
-                                 parameters={'id': id, 'relationship_types': relationship_types})
-            node_data = result.data()
+        # Here: x is a Node and r are the list of Relationship that leads from
+        # the first node to x.
+        """
+        cypher = MATCH p = (:EducFramework {id:$id})-[r*0..]->(x)
+                    WHERE ALL(rel IN relationships(p) WHERE type(rel) IN $relationship_types)
+                    RETURN x, r
+        """
 
-        return schemas.GraphNodesEdges(**node_data)
+        cypher = """MATCH path = (:EducFramework {id:"1"})-[r*0..]->(x)
+                    WHERE ALL(rel IN relationships(path) WHERE type(rel) IN ["comprises"])
+                    RETURN collect(DISTINCT x) as nodes,
+                           [r in collect(distinct last(r)) | [ID(startNode(r)), ID(endNode(r)), properties(r) ]] as rels"""
+
+
+        records, summary, keys = self._driver.execute_query(cypher,
+                                                            id=str(id),
+                                                            relationship_types=relationships_in_skillgraph,
+                                                            database_=self.database)
+        print(records)
+        print("The query `{query}` returned {records_count} records in {time} ms.".format(query=summary.query,
+                                                                                          records_count=len(records),
+                                                                                          time=summary.result_available_after))
+
+        if len(records) == 0:
+            return schemas.GraphNodesEdges(nodes=schemas.Nodes(nodes=[]),
+                                           relationships=schemas.Relationships(relationships=[]),
+                                           nodes_count=0,
+                                           relationships_count=0)
+
+        print("records:")
+        print(records)
+        nodes_properties = [record.data() for record in records if record.data()]
+        rel_properties = [record.data() for record in records if record.data()]
+        for record in records:
+            print(record)
+        print(nodes_properties)
+        return schemas.GraphNodesEdges(nodes=schemas.Nodes(nodes=data["nodes"]),
+                                       relationships=schemas.Relationships(relationships=data["rels"]),
+                                       nodes_count=data["size(nodes)"],
+                                       relationships_count=data["size(rels)"])
 
     def create_educ_framework(self, title: str, description: str, user: schemas.UserNeo4j):
         return self.create_node(label="EducFramework",

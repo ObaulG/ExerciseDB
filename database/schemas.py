@@ -171,10 +171,14 @@ class Nodes(BaseModel):
     nodes: list[Node]
 
 class Relationship(BaseModel):
-    relationship_id: int
+    """
+    Relationship data from Neo4j queries. We should not hold
+    all the nodes data, just their ids.
+    """
+    relationship_id: Optional[str]
     relationship_type: str
-    source_node: Node
-    target_node: Node
+    source_node_id: str
+    target_node_id: str
     properties: Optional[dict] = None
 
 class Edge(BaseModel):

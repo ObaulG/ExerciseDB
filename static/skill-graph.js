@@ -94,7 +94,7 @@ export default class Graph {
   }
 
   listen(eventName, callback){
-    if (!eventName in this.listeners){
+    if (!this.listeners.hasOwnProperty(eventName)){
         this.listeners[eventName] = [];
     }
     this.listeners[eventName].push(callback);

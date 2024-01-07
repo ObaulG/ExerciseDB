@@ -170,3 +170,8 @@ fieldset_educitems{
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
+.basic-window{
+    border: 2px solid blue;
+    background: deepskyblue;
+}

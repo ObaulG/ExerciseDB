@@ -5,14 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Skill editor</title>
 
-    <link href="main_style.css"
-          rel="stylesheet">
+    <link href="main_style.css" rel="stylesheet">
+    <link rel="stylesheet" href="notifications.css">
+
     <script src="https://d3js.org/d3.v6.min.js"></script>
-    <script type="module" src="skill-editor.js"></script>
+
     <script type="module" src="skill-graph.js"></script>
-    <script type="module" src="skills.js"></script>
+<!--    <&#45;&#45; <script type="module" src="skills.js"></script> !&ndash;&gt;-->
     <script type="module" src="cookie_helper.js"></script>
     <script type="module" src="exercisedb_methods.js"></script>
+
+    <script src="notifications.js"></script>
+    <script type="module" src="notification_creator.js"></script>
+
+    <script type="module" src="skill-editor.js"></script>
 </head>
 
 <body>
@@ -52,7 +58,7 @@
               <option value="Knowledge">
             </datalist>
 
-            <div id="graph-form">
+            <div id="graph-form" class="basic-window">
                 <h1>Create a new graph</h1>
                 <label for="graph-title">Graph title</label>
                 <input type="text" class="graph-descr" id="graph-title" placeholder="">
@@ -61,7 +67,7 @@
                 <input type="button" name="send-graph-create-request" id="send-graph-create-request" value="Create">
             </div>
 
-            <div id="graph-list">
+            <div id="graph-list" class="basic-window">
                 <table>
                     <thead><tr>
                         <th>#</th>
