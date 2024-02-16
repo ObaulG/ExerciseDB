@@ -123,6 +123,7 @@ export default class Graph {
       source: this.nodes.find((n) => n.local_id == e.source),
       target: this.nodes.find((n) => n.local_id == e.target),
       label: e.label,
+      properties: e.properties,
     }));
   }
 
@@ -385,6 +386,7 @@ export default class Graph {
   }
 
   redrawNodes() {
+  console.log("redrawNodes");
     this.circles
       .selectAll("g")
       .data(this.nodes, (d) => d.local_id)
@@ -499,7 +501,7 @@ export default class Graph {
   }
 
   /**
-  Emits the edgeClicked event when right clicking a node.
+  Emits the edgeClicked event when right clicking an edge.
   **/
   #enterEdges(enter) {
     const edges = enter
@@ -618,6 +620,9 @@ export default class Graph {
     var resp = await db_methods.clear_graph()
   }
 
+  /**
+    Load a Graph from local nodes and edges.
+   */
   load(nodes, edges) {
     this.nodeId = nodes.reduce((prev, curr) =>
       prev.local_id > curr.local_id ? prev.local_id : curr.local_id
@@ -627,6 +632,35 @@ export default class Graph {
     this.redraw();
   }
 
+  /**
+   * Create a Graph from data received from Neo4j app.
+   * @param nodes A list of Nodes without local_id. They have "node_id" key.
+   * @param edges A list of Edges.
+   */
+  load_from_json(nodes, edges){
+    this.nodeId = nodes.length;
+    // edges stores db_id and not local_id, so we should convert them.
+    console.log("load_from_json");
+    // associates the node's database id to the local_id we will give here.
+    var db_id_to_local_id = {};
+    for(let i = 0; i<nodes.length; i++){
+        nodes[i].local_id = i;
+        db_id_to_local_id[nodes[i]] = i;
+    }
+
+
+    edges.forEach((edge) => {
+      edge.source = db_id_to_local_id[edge.source]
+    });
+
+    console.log("local_ids are set");
+    this.nodes = nodes;
+    console.log(nodes);
+    console.log(this.nodes);
+    this.edges = this.#mapEdges(edges);
+    console.log("nodes and edges are set");
+    this.redraw();
+  }
   /**
     TODO: serialize into specific objects to send to the Python back-end.
   **/

@@ -1,7 +1,6 @@
 //import * as skills from './skills.js';
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import Graph from './skill-graph.js';
-import NodeType from './skill-graph.js';
 import * as notifCreator from './notification_creator.js';
 
 var side_window;
@@ -78,8 +77,8 @@ function update_changes_to_graph(graph){
     It should retrieve this graph data.
 **/
 async function editGraph(graph_id){
-    console.log("Loading graph " + graph_id)
-    load_skill_graph_data_from_db(graph_id)
+    console.log("Loading graph " + graph_id);
+    await load_skill_graph_data_from_db(graph_id);
 }
 /**
     Graph data is stored in existing_graphs
@@ -126,8 +125,8 @@ async function create_new_graph(title, descr){
     })
     .then(handleErrors)
     .then(response => {
-        var response = response.json();
-        return response;
+        var response_json = response.json();
+        return response_json;
         })
     .catch(function(error) {
         console.log('An error has occured... : ' + error.message);
@@ -158,8 +157,7 @@ async function load_skill_graph_data_from_db(graph_id){
     })
     .then(handleErrors)
     .then(response => {
-        var response = response.json();
-        return response;
+        return response.json();
         })
     .catch(function(error) {
         notifCreator.generate_and_call_error_notif("Load graph error", 'An error has occured... : ' + error.message);
@@ -167,25 +165,28 @@ async function load_skill_graph_data_from_db(graph_id){
     .then(data => {
         console.log(data);
         //class GraphNodesEdges(BaseModel):
-            //nodes_count: Optional[int]
-            //relationships_count: Optional[int]
-            //nodes: Nodes
-            //relationships: Relationships
+        //    nodes_count: Optional[int]
+        //    edges_count: Optional[int]
+        //    nodes: Nodes
+        //    edges: Edges
 
-
-        // data should be a JSON holding an
-        // EducItemData
         var nodes_count = data["nodes_count"];
-        var nodes = data["nodes"];
-        var relationships = data["relationships"];
+
+        // note: these are Object and not Array !
+        var nodes = data["nodes"]["nodes"];
+        var relationships = data["edges"]["edges"];
+
+        // TODO: the DB can store the app location (x,y) of each node, for each user.
 
         var json_converted = convert_neo4j_graph(nodes, relationships);
-        graph.load(json_converted.nodes, json_converted.edges);
-        notifCreator.generate_and_call_success_notif("Response error", 'An error has occured... : ' + error.message);
+        graph.load_from_json(json_converted.nodes, json_converted.edges);
+        notifCreator.generate_and_call_success_notif("Graph loaded!", "");
         db_graph_id = graph_id;
     })
     .catch(function(error) {
-       notifCreator.generate_and_call_error_notif("Process error", 'An error has occured... : ' + error.message);
+       console.log('An error has occured... : ' + error.message);
+       notifCreator.generate_and_call_error_notif("Graph process error", 'An error has occured... : ' + error.message);
+       console.log('An error has occured... : ' + error.message);
     });
 }
 
@@ -232,40 +233,30 @@ async function get_all_skillgraphs_from_db(){
     });
 }
 
-function convert_neo4j_graph(nodes, relationships){
-/**
-class Node(NodeBase):
-    properties: Optional[dict] = None
+function convert_neo4j_graph(nodes, edges){
 
-class Nodes(BaseModel):
-    nodes: List[Node]
-
-class Relationship(BaseModel):
-    relationship_id: int
-    relationship_type: str
-    source_node: Node
-    target_node: Node
-    properties: Optional[dict] = None
-**/
 
     var new_nodes_array = [];
     var new_edges_array = [];
+    console.log("converting neo4j graph");
+    console.log(nodes);
+    console.log(edges);
 
-    nodes.forEach((node) => {
+    Object.values(nodes).forEach((node) => {
         new_nodes_array.push({
-            id: node.id,
-            title: node.title,
+            id: node.node_id,
+            title: node.properties.title,
             x: 0,
             y: 0,
             properties: node.properties,
         });
     });
 
-    relationships.forEach((edge) => {
+    Object.values(edges).forEach((edge) => {
         new_edges_array.push({
             source: edge.source_node,
             target: edge.target_node,
-            label: "",
+            label: edge.label,
             properties: edge.properties,
         });
     });

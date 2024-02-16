@@ -1,4 +1,5 @@
-from neo4j import GraphDatabase, Result
+from neo4j import GraphDatabase, Result, Record
+from neo4j.graph import Node
 from . import models, schemas
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -15,25 +16,31 @@ relationship_types = ['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "ha
 
 relationships_in_skillgraph=['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency", "requires",
                               "isComplexificationOf", "isLeverOfUnderstandingOf"]
+
 # Used for validation to ensure they are not overwritten
 base_properties = ['created_by', 'created_time', 'id']
 
 
 class Neo4jManager:
+    """
+    In this Neo4j database, all nodes have an id custom property, as said in the documentation.
+    """
+
     def __init__(self, uri, user, password):
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
         self.database = "neo4j"
     def close(self):
         self._driver.close()
 
+
     def generate_node_list_from_query_result(self, query_result: Result):
         node_list = []
         for record in query_result:
-            print(record)
+            #print(record)
             record_data = record.data()
-            print(record_data)
-            node_data = record_data["node"]
-            labels = record_data["labels"]
+            #print(record_data)
+            node_data = record_data.get("node", {})
+            labels = record_data.get("labels", [])
             # Create node for each result in query
             # note: str conversion just in case.
             node = schemas.Node(node_id=str(node_data['id']),
@@ -43,6 +50,33 @@ class Neo4jManager:
             # Append each node result into Nodes list
             node_list.append(node)
         return schemas.Nodes(nodes=node_list)
+
+    def generate_GraphNodeEdges_from_records(self, records: list[Record]) -> schemas.GraphNodesEdges:
+        """
+        neo4j.Record.data() removes the labels of the Nodes, but our app needs it.
+        :param records: A list of Record
+        :return: The corresponding schemas.GraphNodesEdges
+        """
+        node_list = []
+        rel_list = []
+        for record in records:
+            nodes = record.get("nodes")
+            rels = record.get("rels")
+            print(nodes)
+            node_list.extend([schemas.Node(node_id=node.get("id", "-1"),
+                                           labels=node.labels,
+                                           properties={key: value for (key,value) in node.items()})
+                              for node in nodes])
+
+            rel_list.extend([schemas.Edge(source=str(rel[0]),
+                                          target=str(rel[1]),
+                                          label=str(rel[2]),
+                                          properties=rel[3]) for rel in rels])
+
+        return schemas.GraphNodesEdges(nodes=schemas.Nodes(nodes=node_list),
+                                       edges=schemas.Edges(edges=rel_list),
+                                       nodes_count=len(node_list),
+                                       edges_count=len(rel_list))
 
     def generic_get_nodes(self, label: str):
         """
@@ -543,13 +577,16 @@ class Neo4jManager:
                     WHERE ALL(rel IN relationships(p) WHERE type(rel) IN $relationship_types)
                     RETURN x, r
         """
-
-        cypher = """MATCH path = (:EducFramework {id:"1"})-[r*0..]->(x)
+        """
+        cypher = MATCH path = (:EducFramework {id:$id})-[r*0..]->(x)
+                 WHERE ALL(rel IN relationships(path) WHERE type(rel) IN ["comprises"])
+                 RETURN collect(DISTINCT x) as nodes,
+                       [r in collect(distinct last(r)) | [ID(startNode(r)), ID(endNode(r)), properties(r) ]] as rels
+        """
+        cypher = """MATCH path = (:EducFramework {id:$id})-[r*0..]->(x)
                     WHERE ALL(rel IN relationships(path) WHERE type(rel) IN ["comprises"])
                     RETURN collect(DISTINCT x) as nodes,
-                           [r in collect(distinct last(r)) | [ID(startNode(r)), ID(endNode(r)), properties(r) ]] as rels"""
-
-
+                       [r in collect(distinct last(r)) | [startNode(r).id, endNode(r).id, type(r), properties(r) ]] as rels"""
         records, summary, keys = self._driver.execute_query(cypher,
                                                             id=str(id),
                                                             relationship_types=relationships_in_skillgraph,
@@ -561,21 +598,13 @@ class Neo4jManager:
 
         if len(records) == 0:
             return schemas.GraphNodesEdges(nodes=schemas.Nodes(nodes=[]),
-                                           relationships=schemas.Relationships(relationships=[]),
+                                           edges=schemas.Edges(edges=[]),
                                            nodes_count=0,
-                                           relationships_count=0)
+                                           edges_count=0)
 
-        print("records:")
-        print(records)
-        nodes_properties = [record.data() for record in records if record.data()]
-        rel_properties = [record.data() for record in records if record.data()]
-        for record in records:
-            print(record)
-        print(nodes_properties)
-        return schemas.GraphNodesEdges(nodes=schemas.Nodes(nodes=data["nodes"]),
-                                       relationships=schemas.Relationships(relationships=data["rels"]),
-                                       nodes_count=data["size(nodes)"],
-                                       relationships_count=data["size(rels)"])
+        # Note : It seems there is exactly 1 record...
+
+        return self.generate_GraphNodeEdges_from_records(records)
 
     def create_educ_framework(self, title: str, description: str, user: schemas.UserNeo4j):
         return self.create_node(label="EducFramework",

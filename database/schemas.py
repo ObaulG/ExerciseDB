@@ -140,12 +140,14 @@ class StaticExerciseAnswer(BaseModel):
     id_author: int
     answer_text: str
 
+
 class StaticExerciseSubmit(BaseModel):
     title: str
     difficulty: int
     educ_items_id: list[int]
     ex_content: str
     ex_answer: Optional[StaticExerciseAnswer]
+
 
 class StaticExercise(BaseModel):
     id_exercise: int
@@ -157,10 +159,11 @@ class StaticExercise(BaseModel):
 class Exercises(BaseModel):
     exercises: list[StaticExercise]
 
+
 # Node response models
 class NodeBase(BaseModel):
-    node_id: int
-    labels: list
+    node_id: str
+    labels: list[str]
 
 
 class Node(NodeBase):
@@ -189,15 +192,20 @@ class Edge(BaseModel):
     source: str
     target: str
     label: str
+    properties: Optional[dict] = None
+
+class Edges(BaseModel):
+    edges: list[Edge]
+
 # Relationship response models
 class Relationships(BaseModel):
     relationships: List[Relationship]
 
 class GraphNodesEdges(BaseModel):
     nodes_count: Optional[int]
-    relationships_count: Optional[int]
+    edges_count: Optional[int]
     nodes: Nodes
-    relationships: Relationships
+    edges: Edges
 
 # Query response model
 class Query(BaseModel):
