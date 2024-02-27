@@ -47,7 +47,6 @@ function create_account(){
 
 
 function login(){
-console.log("wut?");
     var data = new FormData (login_form); // get the data of form
 
     var username = data.get("username"); // get the value of the <input name="username">
@@ -66,28 +65,27 @@ console.log("wut?");
         },
         body: JSON.stringify(user_json_data),
     })
-    .then(response => {
-        return response.json();
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-        alert("Login failed...");
-    })
-    .then(data => {
-        console.log(data);
+    ..then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error("JSON parse error");
+    .then((responseJson) => {
+        //console.log(data);
         // data holds the JWT
         localStorage.setItem('tokens', JSON.stringify(data));
 
         // store JWT in session storage
         sessionStorage.setItem('JWT', myJWT);
 
-        console.log('My JWT is', sessionStorage.getItem('JWT'));
+        //console.log('My JWT is', sessionStorage.getItem('JWT'));
 
-        alert("Login success!");
+        notifCreator.generate_and_call_success_notif("Login success!", "");
     })
-    .catch(function(error) {
+    .catch((error) {
         console.log('An error has occured... : ' + error.message);
-    });
+         notifCreator.generate_and_call_error_notif("Login failed!", '');
+    })
 }
 
 var account_creation_form;
