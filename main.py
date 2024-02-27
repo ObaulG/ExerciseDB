@@ -17,15 +17,25 @@ from database.schemas import EducItemDataSubmit
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.responses import HTMLResponse
 from jose import JWTError, jwt
 from typing import Annotated
 from auth_logic import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, oauth2_scheme
-from auth_logic import authenticate_user, create_jwt
+from auth_logic import authenticate_user, create_jwt, decode_jwt
+from auth_logic import RequiresLoginException
 from database.schemas import User, Token, TokenData
 import database.crud as crud
 
 from database.crud_neo4j import Neo4jManager
 
+protected_files = [
+    "/exercise_submit.js",
+    "/exercisedb_methods.js",
+    "/skill-editor.html",
+    "/skill-editor.js",
+    "/skill-graph.js",
+    "/submit_exercise.html"
+]
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -43,9 +53,10 @@ app.add_middleware(
 
 # Neo4j configuration
 NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
+NEO4J_USER = "admin-python-app"
 #NEO4J_PASSWORD = "ACxJZm6EUr3ykwgIApuwVHj3plkekfJNIx_2jR27GAY"
-NEO4J_PASSWORD = "48bfcdez32"
+#NEO4J_PASSWORD = "48bfcdez32"
+NEO4J_PASSWORD = "azertyuiop123"
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 
@@ -62,13 +73,14 @@ logger = logging.getLogger(__name__)  # the __name__ resolve to "main" since we 
 #logging.getLogger("neo4j").addHandler(handler)
 #logging.getLogger("neo4j").setLevel(logging.DEBUG)
 
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# # Dependency
+# def get_db():
+#     db = SessionLocal()
+#     try:
+#         yield db
+#     finally:
+#         db.close()
+
 
 
 # Dependency to get the Neo4j connection
@@ -87,72 +99,82 @@ def retrieve_document_as_str(path: str) -> str:
     return doc
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)):
-    """
-    Retrieve the user from the JWT he sends.
-    :param token: The JWT sent by the client.
-    :param db:
-    :return: Instance of user as stored in DB or None
-    """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+@app.exception_handler(RequiresLoginException)
+async def login_exception_handler(request: Request, exc: RequiresLoginException):
+    print("RequiresLoginException caught")
+    return HTMLResponse(
+        status_code=401,
+        content=retrieve_document_as_str("static/login_create.html"),
     )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None or payload.get("exp") >= time.time():
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
-    user = crud.get_user_by_pseudo(db, username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
 
 
-async def get_current_user_neo4j(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_neo4j_db)):
+async def get_current_user_neo4j(token: Annotated[str, Depends(oauth2_scheme)],
+                                 db: Neo4jManager = Depends(get_neo4j_db)):
     """
-    Retrieve the user from the JWT he sends.
+    Retrieves the user from the JWT he sent.
     :param token: The JWT sent by the client.
-    :param db:
+    :param db: Neo4j DB dependency
     :return: Instance of User as a schemas.Node
     """
-    credentials_exception = HTTPException(
+    credentials_exception = RequiresLoginException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    exp_exception = RequiresLoginException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="The provided credentials were expired",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None or payload.get("exp") >= time.time():
+        # also checks expiration
+        payload = decode_jwt(token)
+        if payload is None:
+            raise exp_exception
+        username = payload.get("sub")
+        if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = Neo4jManager.get_user_by_pseudo(db, username=token_data.username)
+    user = db.get_user_by_pseudo(pseudo=token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
 
-async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)]
-):
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
+# async def get_current_active_user(
+#     current_user: Annotated[User, Depends(get_current_user)]
+# ):
+#     if current_user.disabled:
+#         raise HTTPException(status_code=400, detail="Inactive user")
+#     return current_user
 
 async def get_current_active_user_neo4j(
-    current_user: Annotated[User, Depends(get_current_user_neo4j)]
-):
+    current_user: Annotated[User, Depends(get_current_user_neo4j)]):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
+
+@app.middleware("http")
+async def check_protected_files(request: Request, call_next):
+    start_time = time.time()
+    path = request.url.path
+    if (path.endswith(".html") or path.endswith(".js")) and path in protected_files:
+        try:
+            user = await get_current_user_neo4j(request.cookies.get("access_token"),
+                                                Depends(get_neo4j_db))
+        except RequiresLoginException as e:
+            process_time = time.time() - start_time
+            return HTMLResponse(
+                status_code=401,
+                content=retrieve_document_as_str("static/login_create.html"),
+            )
+    process_time = time.time() - start_time
+    response = await call_next(request)
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
 
 # @app.middleware("http")
 # async def add_process_time_header(request: Request, call_next):
@@ -169,7 +191,7 @@ async def get_current_active_user_neo4j(
 async def login_for_access_token(
     response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Session = Depends(get_neo4j_db)
+    db: Neo4jManager = Depends(get_neo4j_db)
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -190,25 +212,22 @@ async def login_for_access_token(
 
 
 @app.post("/user/create_account", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_neo4j_db)):
-    db_user_by_email = db.get_user_by_email(db, email=user.email)
-    if db_user_by_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    db_user_by_pseudo = db.get_user_by_pseudo(db, email=user.pseudo)
-    if db_user_by_pseudo:
-        raise HTTPException(status_code=400, detail="Pseudo is already used.")
-    return db.create_user(db=db, user=user)
+def create_user(user: schemas.UserCreate, db: Neo4jManager = Depends(get_neo4j_db)):
+
+
+    user = db.create_user(user=user)
+    return db.create_user(user=user)
 
 
 @app.get("/users/all", response_model=list[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_neo4j_db)):
-    users = db.get_users(db, skip=skip, limit=limit)
+def read_users(skip: int = 0, limit: int = 100, db: Neo4jManager = Depends(get_neo4j_db)):
+    users = db.get_users()
     return users
 
 
 @app.get("/users/{user_id}", response_model=schemas.User)
-def read_user_by_id(user_id: int, db: Session = Depends(get_neo4j_db)):
-    db_user = db.get_user(db, user_id=user_id)
+def read_user_by_id(user_id: str, db: Neo4jManager = Depends(get_neo4j_db)):
+    db_user = db.get_user_by_id(user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
@@ -232,28 +251,29 @@ def get_skill_graph(framework_id: str, db: Neo4jManager = Depends(get_neo4j_db))
 @app.post("/skillgraph", response_model=schemas.GraphNodesEdges)
 def create_skill_graph(create_form: schemas.SkillGraphCreate, db: Neo4jManager = Depends(get_neo4j_db)):
     return db.create_educ_framework(create_form.title, create_form.description)
+
 @app.get("/educitem/all", response_model = list[schemas.EducItemData])
-def get_educ_items_list(db: Session = Depends(get_db)):
+def get_educ_items_list(db: Neo4jManager = Depends(get_neo4j_db)):
     educ_items = crud.get_educ_items(db)
     return educ_items
 
 
 @app.post("/edge", response_model=schemas.Relationship)
 def add_edge_in_skill_graph(edge: schemas.Edge,
-                            current_user: Annotated[User, Depends(get_current_user)],
-                            db: Session = Depends(get_neo4j_db)):
+                            current_user: Annotated[User, Depends(get_current_user_neo4j)],
+                            db: Neo4jManager = Depends(get_neo4j_db)):
     pass
 
 @app.post("/edge/{edge_id}", response_model=schemas.Relationship)
 def delete_edge_in_skill_graph(edge_id: str,
-                               current_user: Annotated[User, Depends(get_current_user)],
-                               db: Session = Depends(get_neo4j_db)):
+                               current_user: Annotated[User, Depends(get_current_user_neo4j)],
+                               db: Neo4jManager = Depends(get_neo4j_db)):
     pass
 
 @app.post("/educitem", response_model=schemas.EducItemData)
 def submit_educ_item(educitem: EducItemDataSubmit,
-                     current_user: Annotated[User, Depends(get_current_user)],
-                     db: Session = Depends(get_neo4j_db)):
+                     current_user: Annotated[User, Depends(get_current_user_neo4j)],
+                     db: Neo4jManager = Depends(get_neo4j_db)):
     logging.info("submit educ item now")
     new_educ_item = crud.create_educ_item_from_submit(db=db, educ_item=educitem)
 
@@ -261,13 +281,14 @@ def submit_educ_item(educitem: EducItemDataSubmit,
 
 
 @app.get("/exercise/all", response_model=schemas.Exercises)
-def get_exercises(db: Session = Depends(get_neo4j_db)):
+def get_exercises(db: Neo4jManager = Depends(get_neo4j_db)):
     pass
+
 
 @app.post("/exercise/static", response_model=schemas.Exercise)
 def create_static_exercise(exercise: schemas.StaticExerciseSubmit,
-                           current_user: Annotated[User, Depends(get_current_user)],
-                           db: Session = Depends(get_neo4j_db)):
+                           current_user: Annotated[User, Depends(get_current_user_neo4j)],
+                           db: Neo4jManager = Depends(get_neo4j_db)):
     """
 
     :param exercise:
@@ -283,13 +304,13 @@ def create_static_exercise(exercise: schemas.StaticExerciseSubmit,
 
     db_base_exercise = db.create_exercise(base_exercise)
 
-
     return db_base_exercise
 
 
 @app.get("/exercises/{exercise_id}", response_model=schemas.Exercise)
-def get_exercise_by_id(exercise_id: int, db: Session = Depends(get_db)):
+def get_exercise_by_id(exercise_id: int, db: Neo4jManager = Depends(get_neo4j_db)):
     pass
+
 
 # html / css pages
 app.mount("/",

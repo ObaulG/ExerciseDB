@@ -1,5 +1,6 @@
 import * as db_methods from './exercisedb_methods.js';
 
+
 export const NodeType = {
 	Framework: "framework",
 	Competency: "competency",
@@ -38,10 +39,17 @@ const keyToNodeType = {
     Nodes and Edges separately.
 **/
 export default class Graph {
+  get graph_id() {
+    return this._graph_id;
+  }
+
+  get current_pressed() {
+    return this._current_pressed;
+  }
   constructor(opts) {
     this.svg = opts.svg;
     // this is the graph_id as stored in the Neo4j database.
-    this.graph_id = null;
+    this._graph_id = null;
     this.nodes = opts.nodes;
     this.edges = this.#mapEdges(opts.edges);
     // current id == maximum id
@@ -63,7 +71,7 @@ export default class Graph {
     to add Nodes.
     Holds a KeyboardEvent.key (string).
     **/
-    this.current_pressed = null;
+    this._current_pressed = null;
     /**
     KeyboardEvent.keyCode is deprecated
     https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode,
@@ -224,13 +232,13 @@ export default class Graph {
               }
               if (event.key in keyToNodeType){
                   console.log(event.key + " pressed!");
-                  this.current_pressed = event.key;
+                  this._current_pressed = event.key;
               }
         })
         .on("keyup", (event) => {
               if (event.key in keyToNodeType){
                   console.log(event.key + " unpressed!");
-                  this.current_pressed = null;
+                  this._current_pressed = null;
               }
       });
 
@@ -255,9 +263,9 @@ export default class Graph {
               console.log("event.shiftKey! adding a Node");
               this.addNode((this.nodeId + 1).toString(), pos[0], pos[1]);
           }
-          if (this.current_pressed in keyToNodeType){
+          if (this._current_pressed in keyToNodeType){
               console.log("mouseDown with key pressed!");
-              let nodetype = keyToNodeType[this.current_pressed];
+              let nodetype = keyToNodeType[this._current_pressed];
               this.addSkillNode((this.nodeId + 1).toString(), pos[0], pos[1], nodetype, "");
           }
 
@@ -634,10 +642,12 @@ export default class Graph {
 
   /**
    * Create a Graph from data received from Neo4j app.
+   * @param graph_id The graph_id as stored in the Neo4j DB.
    * @param nodes A list of Nodes without local_id. They have "node_id" key.
    * @param edges A list of Edges.
    */
-  load_from_json(nodes, edges){
+  load_from_json(graph_id, nodes, edges){
+    this._graph_id = graph_id;
     this.nodeId = nodes.length;
     // edges stores db_id and not local_id, so we should convert them.
     console.log("load_from_json");
@@ -645,20 +655,25 @@ export default class Graph {
     var db_id_to_local_id = {};
     for(let i = 0; i<nodes.length; i++){
         nodes[i].local_id = i;
-        db_id_to_local_id[nodes[i]] = i;
+        db_id_to_local_id[nodes[i].id] = i;
     }
-
-
-    edges.forEach((edge) => {
-      edge.source = db_id_to_local_id[edge.source]
-    });
+    console.log("db_id_to_local_id: ");
+    console.log(db_id_to_local_id);
 
     console.log("local_ids are set");
     this.nodes = nodes;
     console.log(nodes);
     console.log(this.nodes);
+
+    edges.forEach((edge) => {
+      edge.source = db_id_to_local_id[edge.source];
+      edge.target = db_id_to_local_id[edge.target];
+    });
+    console.log("Edges before map:");
+    console.log(edges);
     this.edges = this.#mapEdges(edges);
-    console.log("nodes and edges are set");
+    console.log("edges are set");
+    console.log(this.edges);
     this.redraw();
   }
   /**
@@ -676,5 +691,11 @@ export default class Graph {
     );
   }
 
+  getNbNodes(){
+    return this.nodes.length;
+  }
 
+  getNbEdges() {
+    return this.edges.length;
+  }
 }

@@ -29,6 +29,7 @@ class Neo4jManager:
     def __init__(self, uri, user, password):
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
         self.database = "neo4j"
+        
     def close(self):
         self._driver.close()
 
@@ -86,7 +87,7 @@ class Neo4jManager:
         """
         cypher = f"MATCH (node :{label} ) RETURN ID(node) as id, LABELS(node) as labels, node"
         records, summary, keys = self._driver.execute_query(cypher,
-                                                            database_=self.database)
+                                                            database=self.database)
 
         node_list = self.generate_node_list_from_query_result(records)
 
@@ -317,7 +318,7 @@ class Neo4jManager:
                                     target_node=target_node)
 
     # READ data about a relationship
-    async def read_relationship(self, relationship_id: str):
+    def read_relationship(self, relationship_id: str):
 
         cypher = f"""
             MATCH (nodeA)-[relationship]->(nodeB)
@@ -347,7 +348,7 @@ class Neo4jManager:
                                     source_node=source_node,
                                     target_node=target_node)
 
-    async def update_relationship(self, relationship_id: str, attributes: dict, user: schemas.UserNeo4j):
+    def update_relationship(self, relationship_id: str, attributes: dict, user: schemas.UserNeo4j):
         # Check that attributes dictionary does not modify base fields
         for key in attributes:
             if key in base_properties:
@@ -386,7 +387,7 @@ class Neo4jManager:
                                     target_node=target_node)
 
     # DELETE relationship in the graph
-    async def delete_relationship(self, relationship_id: str):
+    def delete_relationship(self, relationship_id: str):
 
         cypher = f"""
             MATCH (a)-[relationship]->(b)
@@ -418,9 +419,14 @@ class Neo4jManager:
         with self._driver.session() as session:
             result = session.run(query=cypher,
                                  parameters={'id': user_id})
-            node_data = result.data()[0]
+            result_data = result.data()
+            if not result_data:
+                return None
+            node_data = result_data[0]
 
-        return schemas.Node(**node_data)
+        return schemas.Node(node_id=node_data["id"],
+                            labels=["User"],
+                            properties=node_data)
 
     def get_user_by_pseudo(self, pseudo: str):
         cypher = f"""
@@ -431,9 +437,14 @@ class Neo4jManager:
         with self._driver.session() as session:
             result = session.run(query=cypher,
                                  parameters={'pseudo': pseudo})
-            node_data = result.data()[0]
-
-        return schemas.Node(**node_data)
+            result_data = result.data()
+            if not result_data:
+                return None
+            node_data = result_data[0]["user"]
+            print("NODE DATA:", node_data)
+        return schemas.Node(node_id=node_data["id"],
+                            labels=["User"],
+                            properties=node_data)
 
     def get_user_by_email(self, email: str):
         cypher = f"""
@@ -444,38 +455,56 @@ class Neo4jManager:
         with self._driver.session() as session:
             result = session.run(query=cypher,
                                  parameters={'email': email})
-            node_data = result.data()[0]
+            result_data = result.data()
 
-        return schemas.Node(**node_data)
+            if not result_data:
+                return None
+            node_data = result_data[0]["user"]
+            print(node_data)
+        return schemas.Node(node_id=node_data["id"],
+                            labels=["User"],
+                            properties=node_data)
 
     def create_user(self, user: schemas.UserCreate):
 
-        properties = {"pseudo": user.pseudo,
-                      "password": user.password + "notreallyhashed",
-                      "email": user.email,
-                      "id": uuid4()}
+        db_user_by_email = self.get_user_by_email(user.email)
+        if db_user_by_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        db_user_by_pseudo = self.get_user_by_pseudo(user.pseudo)
+        if db_user_by_pseudo:
+            raise HTTPException(status_code=400, detail="Pseudo is already used.")
+        cypher = """CREATE (new_node:User {
+                                pseudo:$pseudo, 
+                                password:$password, 
+                                email:$email, 
+                                id:$id, 
+                                created_by:$created_by, 
+                                created_time:$created_time})
 
-        unpacked_attributes = 'SET ' + ', '.join(
-            f'new_node.{key}=\'{value}\'' for (key, value) in properties.items())
-
-        cypher = f"""
-                        CREATE (new_node:User)\n'
-                        SET new_node.created_by = $created_by\n'
-                        SET new_node.created_time = $created_time\n'
-                        {unpacked_attributes}\n
-                        RETURN new_node, LABELS(new_node) as labels, ID(new_node) as id')
-                        """
+                    RETURN new_node, LABELS(new_node) as labels, ID(new_node) as id
+                    """
         with self._driver.session() as session:
             result = session.run(
                 query=cypher,
                 parameters={
+                    'pseudo': user.pseudo,
+                    'password': user.password + "notreallyhashed",
+                    'email': user.email,
+                    'id': uuid4().hex,
                     'created_by': user.pseudo,
                     'created_time': str(datetime.now(timezone.utc)),
-                    'attributes': properties,
                 },
             )
-        user_node = result.data()[0]
+            result_data = result.data()
+            if not result_data:
+                raise HTTPException(status_code=500, detail="Error when trying to create an account.")
 
+            user_node = result_data[0]
+
+        # TODO: will probably crash here
+        # user_node: {'user': {... } }
+        print(user_node)
+        user_node = user_node["user"]
         # When creating a User, we also have to link it to every Skill Node
         educ_items = self.get_educ_items(1000000)
         for educ_item in educ_items:

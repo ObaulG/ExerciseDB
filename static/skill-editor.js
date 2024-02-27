@@ -6,6 +6,7 @@ import * as notifCreator from './notification_creator.js';
 var side_window;
 var node_form;
 var edge_form;
+var db_graph_id;
 var graph_list;
 var graph_table;
 var graph_create_form;
@@ -79,6 +80,7 @@ function update_changes_to_graph(graph){
 async function editGraph(graph_id){
     console.log("Loading graph " + graph_id);
     await load_skill_graph_data_from_db(graph_id);
+    graph_table.hidden = true;
 }
 /**
     Graph data is stored in existing_graphs
@@ -177,19 +179,27 @@ async function load_skill_graph_data_from_db(graph_id){
         var relationships = data["edges"]["edges"];
 
         // TODO: the DB can store the app location (x,y) of each node, for each user.
-
         var json_converted = convert_neo4j_graph(nodes, relationships);
-        graph.load_from_json(json_converted.nodes, json_converted.edges);
+        graph.load_from_json(graph_id, json_converted.nodes, json_converted.edges);
         notifCreator.generate_and_call_success_notif("Graph loaded!", "");
-        db_graph_id = graph_id;
     })
     .catch(function(error) {
        console.log('An error has occured... : ' + error.message);
        notifCreator.generate_and_call_error_notif("Graph process error", 'An error has occured... : ' + error.message);
        console.log('An error has occured... : ' + error.message);
-    });
+    })
+    .then((update_graph_ui_elements));
 }
 
+
+/**
+    When a graph is loaded, will update current graph UI elements displayed.
+**/
+function update_graph_ui_elements(){
+    if  (!db_graph_id){ return;}
+
+
+}
 async function get_all_skillgraphs_from_db(){
 
     console.log("Retrieving skill graphs...");
@@ -234,8 +244,6 @@ async function get_all_skillgraphs_from_db(){
 }
 
 function convert_neo4j_graph(nodes, edges){
-
-
     var new_nodes_array = [];
     var new_edges_array = [];
     console.log("converting neo4j graph");
@@ -243,6 +251,7 @@ function convert_neo4j_graph(nodes, edges){
     console.log(edges);
 
     Object.values(nodes).forEach((node) => {
+        console.log(node);
         new_nodes_array.push({
             id: node.node_id,
             title: node.properties.title,
@@ -254,8 +263,8 @@ function convert_neo4j_graph(nodes, edges){
 
     Object.values(edges).forEach((edge) => {
         new_edges_array.push({
-            source: edge.source_node,
-            target: edge.target_node,
+            source: edge.source,
+            target: edge.target,
             label: edge.label,
             properties: edge.properties,
         });
@@ -330,7 +339,7 @@ window.onload = function(){
     graph.listen("edgeClick", onGraphEdgeClick);
     graph.listen("nothingClick", onGraphNothingClick);
 
-    /** When clicking outside of the side window, updating the graph object.**/
+    /** When clicking outside the side window, updating the graph object.**/
     document.addEventListener('click', function(event) {
         // Check if the clicked target is not a descendant of myElement
         if (!side_window.contains(event.target)) {
@@ -346,14 +355,13 @@ window.onload = function(){
     graph_table = document.getElementById("graph-table-content");
     // Listen to dynamically created buttons in the graph list
     graph_table.onclick = function(e) {
-
         // Thanks to David Walsh
         // https://davidwalsh.name/event-delegate
         // e.target is the clicked element!
         // If it was a list item
-        var clicked_button = e.target;
+        let clicked_button = e.target;
         console.log("Click detected from : " + e.target + " nodeName: " + clicked_button.nodeName);
-        if(clicked_button && clicked_button.nodeName == "BUTTON") {
+        if(clicked_button && clicked_button.nodeName === "BUTTON") {
             // List item found!
             editGraph(clicked_button.id);
         }
@@ -363,13 +371,11 @@ window.onload = function(){
     graph_create_form.hidden = true;
     graph_create_form.onblur = function(){
         if (graph_create_form.hidden){return;}
-
-
     };
 
-    var bt_create_graph = document.getElementById("create-new-graph");
-    var bt_submit_new_graph = document.getElementById("send-graph-create-request")
-    var bt_load_graph = document.getElementById("load-existing-graph");
+    let bt_create_graph = document.getElementById("create-new-graph");
+    let bt_submit_new_graph = document.getElementById("send-graph-create-request")
+    let bt_load_graph = document.getElementById("load-existing-graph");
 
     bt_create_graph.onclick = function(){
         if (graph_create_form.hidden){
@@ -383,10 +389,9 @@ window.onload = function(){
     };
 
     bt_submit_new_graph.onclick = function(){
-        var graph_create_title = document.getElementById("graph-title");
-        var graph_create_descr = document.getElementById("graph-descr");
-        create_new_graph(graph_create_title.text, graph_create_descr.text);
-        console.log("Graph creation request sent");
+        let graph_create_title = document.getElementById("graph-title");
+        let graph_create_descr = document.getElementById("graph-descr");
+        create_new_graph(graph_create_title.text, graph_create_descr.text).then(r => console.log("Graph creation request sent"));
     }
 
     bt_load_graph.onclick = function(){

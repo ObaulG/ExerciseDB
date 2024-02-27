@@ -4,7 +4,8 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 import time
 from datetime import datetime, timedelta
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, Request, FastAPI, HTTPException, status
+from fastapi.staticfiles import StaticFiles
 import database.crud as crud
 import database.crud_neo4j as crud_neo4j
 from jose.exceptions import JOSEError
@@ -20,6 +21,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 security = HTTPBearer()
 
 
+class RequiresLoginException(HTTPException):
+    pass
+
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -28,8 +33,8 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def authenticate_user(db, username: str, password: str):
-    user = crud_neo4j.get_user_by_pseudo(username)
+async def authenticate_user(db, username: str, password: str):
+    user = db.get_user_by_pseudo(username)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -38,6 +43,8 @@ def authenticate_user(db, username: str, password: str):
 
 
 def decode_jwt(token: str) -> dict:
+    if token is None:
+        return {}
     try:
         decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return decoded_token if decoded_token["exp"] >= time.time() else None
