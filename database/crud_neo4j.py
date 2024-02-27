@@ -466,7 +466,12 @@ class Neo4jManager:
                             properties=node_data)
 
     def create_user(self, user: schemas.UserCreate):
-
+        """
+        Tries to create the user in the Database. Will raise HTTPException if the email or pseudo
+        already exists in the database, i.e. there is a user with one of these info.
+        :param user: The user trying to create its account
+        :return: a schemas.Node containing the data (not the password) of the user created on the DB.
+        """
         db_user_by_email = self.get_user_by_email(user.email)
         if db_user_by_email:
             raise HTTPException(status_code=400, detail="Email already registered")
@@ -499,12 +504,15 @@ class Neo4jManager:
             if not result_data:
                 raise HTTPException(status_code=500, detail="Error when trying to create an account.")
 
-            user_node = result_data[0]
+            user_node = result_data[0]["user"]
 
-        # TODO: will probably crash here
+
         # user_node: {'user': {... } }
+
+        # we don't want to send back the password...
+        del user_node["password"]
+
         print(user_node)
-        user_node = user_node["user"]
         # When creating a User, we also have to link it to every Skill Node
         educ_items = self.get_educ_items(1000000)
         for educ_item in educ_items:
