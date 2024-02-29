@@ -176,17 +176,6 @@ async def check_protected_files(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
     return response
 
-# @app.middleware("http")
-# async def add_process_time_header(request: Request, call_next):
-#     print(call_next)
-#     start_time = time.time()
-#     response = await call_next(request)
-#     print(request.method, request.url)
-#     process_time = time.time() - start_time
-#     response.headers["X-Process-Time"] = str(process_time)
-#     return response
-
-
 @app.post("/token", response_model=Token)
 async def login_for_access_token(
     response: Response,
@@ -208,7 +197,8 @@ async def login_for_access_token(
     response.set_cookie(key="access_token",
                         value=f"Bearer {access_token}",
                         httponly=True)
-    return {"access_token": access_token, "token_type": "bearer"}
+
+    return schemas.Token(access_token=access_token, token_type="bearer")
 
 
 @app.post("/user/create_account", response_model=schemas.User)

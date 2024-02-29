@@ -33,7 +33,7 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-async def authenticate_user(db, username: str, password: str):
+def authenticate_user(db, username: str, password: str):
     user = db.get_user_by_pseudo(username)
     if not user:
         return False

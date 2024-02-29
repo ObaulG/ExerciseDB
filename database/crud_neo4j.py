@@ -11,11 +11,13 @@ from uuid import uuid4
 # List of acceptable node labels and relationship types
 node_labels = ['User', 'Admin', 'Developper', 'EducFramework', 'EducItem', 'Competency', 'Knowledge', "Skill",
                'Exercise', "Course", "Resource"]
-relationship_types = ['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency", "requires",
+relationship_types = ['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency",
+                      "requires",
                       "isComplexificationOf", "isLeverOfUnderstandingOf", "masters", "needs"]
 
-relationships_in_skillgraph=['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency", "requires",
-                              "isComplexificationOf", "isLeverOfUnderstandingOf"]
+relationships_in_skillgraph = ['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency",
+                               "requires",
+                               "isComplexificationOf", "isLeverOfUnderstandingOf"]
 
 # Used for validation to ensure they are not overwritten
 base_properties = ['created_by', 'created_time', 'id']
@@ -29,17 +31,16 @@ class Neo4jManager:
     def __init__(self, uri, user, password):
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
         self.database = "neo4j"
-        
+
     def close(self):
         self._driver.close()
-
 
     def generate_node_list_from_query_result(self, query_result: Result):
         node_list = []
         for record in query_result:
-            #print(record)
+            # print(record)
             record_data = record.data()
-            #print(record_data)
+            # print(record_data)
             node_data = record_data.get("node", {})
             labels = record_data.get("labels", [])
             # Create node for each result in query
@@ -66,7 +67,7 @@ class Neo4jManager:
             print(nodes)
             node_list.extend([schemas.Node(node_id=node.get("id", "-1"),
                                            labels=node.labels,
-                                           properties={key: value for (key,value) in node.items()})
+                                           properties={key: value for (key, value) in node.items()})
                               for node in nodes])
 
             rel_list.extend([schemas.Edge(source=str(rel[0]),
@@ -97,7 +98,7 @@ class Neo4jManager:
         # Return Nodes response with collection as list
         return node_list
 
-    def create_node(self, label: str, node_attributes: dict, user: schemas.UserNeo4j):
+    def create_node(self, label: str, node_attributes: dict, user: schemas.Node):
         # Check that node is not User
         if label == 'User':
             raise HTTPException(
@@ -137,16 +138,16 @@ class Neo4jManager:
                 query=cypher,
                 parameters={
                     'label': label,
-                    'created_by': user.username,
+                    'created_by': user.properties.get("pseudo", "?"),
                     'created_time': str(datetime.now(timezone.utc)),
                     'attributes': node_attributes,
                 },
             )
-            node = result.single()
+            user_result = result.single()
 
-        return schemas.Node(node_id=node.properties['id'],
-                            labels=node.labels,
-                            properties=node.properties)
+        return schemas.Node(node_id=user_result["new_node"]['id'],
+                            labels=user_result["labels"],
+                            properties=user_result["new_node "])
 
     def update_node(self, node_id: str, attributes: dict):
         # Check that property to update is not part of base list
@@ -192,7 +193,7 @@ class Neo4jManager:
 
     def create_relationship(self, source_node_label: str, source_node_property: str, source_node_property_value: str,
                             target_node_label: str, target_node_property: str, target_node_property_value: str,
-                            relationship_type: str, user: schemas.UserNeo4j,
+                            relationship_type: str, user: schemas.Node,
                             relationship_attributes: Optional[dict] = None):
         # Check that relationship has an acceptable type
         if relationship_type not in relationship_types:
@@ -229,7 +230,7 @@ class Neo4jManager:
             result = session.run(
                 query=cypher,
                 parameters={
-                    'created_by': user.username,
+                    'created_by': user.properties.get("username", "?"),
                     'created_time': str(datetime.now(timezone.utc)),
                     'nodeA_property': source_node_property_value,
                     'nodeB_property': target_node_property_value,
@@ -255,7 +256,7 @@ class Neo4jManager:
                                     target_node=target_node)
 
     def create_relationship_from_ids(self, nodeA_id: str, nodeB_id: str, relationship_type: str,
-                                     user: schemas.UserNeo4j,
+                                     user: schemas.Node,
                                      relationship_attributes: Optional[dict] = None):
         # Check that relationship has an acceptable type
         if relationship_type not in relationship_types:
@@ -292,7 +293,7 @@ class Neo4jManager:
             result = session.run(
                 query=cypher,
                 parameters={
-                    'created_by': user.username,
+                    'created_by': user.properties.get("username", "?"),
                     'created_time': str(datetime.now(timezone.utc)),
                     'nodeA_id': nodeA_id,
                     'nodeB_id': nodeB_id,
@@ -348,7 +349,7 @@ class Neo4jManager:
                                     source_node=source_node,
                                     target_node=target_node)
 
-    def update_relationship(self, relationship_id: str, attributes: dict, user: schemas.UserNeo4j):
+    def update_relationship(self, relationship_id: str, attributes: dict, user: schemas.Node):
         # Check that attributes dictionary does not modify base fields
         for key in attributes:
             if key in base_properties:
@@ -504,24 +505,30 @@ class Neo4jManager:
             if not result_data:
                 raise HTTPException(status_code=500, detail="Error when trying to create an account.")
 
-            user_node = result_data[0]["user"]
-
-
-        # user_node: {'user': {... } }
+            # {new_node: {}, labels: [...], id: ... }
+            request_result = result_data[0]
 
         # we don't want to send back the password...
-        del user_node["password"]
+        del request_result["new_node"]["password"]
 
-        print(user_node)
-        # When creating a User, we also have to link it to every Skill Node
+        neo4juser = schemas.Node(node_id=request_result["new_node"]["id"],
+                                 labels=request_result["labels"],
+                                 properties=request_result["new_node"])
+
+        # TODO: When creating a User, we also have to link it to every Skill Node
         educ_items = self.get_educ_items(1000000)
         for educ_item in educ_items:
-            self.create_relationship(user_node['id'], educ_item['id'], "masters", user,
-                                     {"mastery_level": 0.0})
+            relationship_result = self.create_relationship("User",
+                                                           "id",
+                                                           request_result["new_node"]['id'],
+                                                           "EducItem",
+                                                           "id",
+                                                           educ_item['id'],
+                                                           "masters",
+                                                           neo4juser,
+                                                           {"mastery_level": 0.0})
 
-        return schemas.Node(node_id=user_node['id'],
-                            labels=user_node['labels'],
-                            properties=user_node['new_node'])
+        return neo4juser
 
     def read_node_id(self, node_id: str):
         """
@@ -643,7 +650,7 @@ class Neo4jManager:
 
         return self.generate_GraphNodeEdges_from_records(records)
 
-    def create_educ_framework(self, title: str, description: str, user: schemas.UserNeo4j):
+    def create_educ_framework(self, title: str, description: str, user: schemas.Node):
         return self.create_node(label="EducFramework",
                                 node_attributes={"title": title, "description": description},
                                 user=user)
@@ -657,7 +664,7 @@ class Neo4jManager:
     def get_educ_items(self, limit: int = 100):
         return self.generic_get_nodes("EducItem")
 
-    def create_educ_item_from_submit(self, educ_item: schemas.EducItemDataSubmit, user: schemas.UserNeo4j):
+    def create_educ_item_from_submit(self, educ_item: schemas.EducItemDataSubmit, user: schemas.Node):
         educ_item_node = self.create_node(label="EducItem",
                                           node_attributes=educ_item.model_dump(),
                                           user=user)
@@ -668,7 +675,7 @@ class Neo4jManager:
                                      {"mastery_level": 0.0})
         return educ_item_node
 
-    def create_exercise(self, exercise: schemas.BaseExercise, user: schemas.UserNeo4j):
+    def create_exercise(self, exercise: schemas.BaseExercise, user: schemas.Node):
 
         exercise_id = uuid4()
         properties = {"title": exercise.title,
@@ -692,7 +699,7 @@ class Neo4jManager:
             result = session.run(
                 query=cypher_exercise,
                 parameters={
-                    'created_by': user.username,
+                    'created_by': user.properties.get("username", "?"),
                     'created_time': str(datetime.now(timezone.utc)),
                     'attributes': properties,
                 },
