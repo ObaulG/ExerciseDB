@@ -1,6 +1,7 @@
 //import * as skills from './skills.js';
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import Graph from './skill-graph.js';
+import {NodeType} from "./skill-graph.js";
 import * as notifCreator from './notification_creator.js';
 
 var side_window;
@@ -28,10 +29,11 @@ function handleErrors(response) {
     TODO: Should also display properties and labels.
 **/
 function displayNodeData(node){
-    var node_title = document.getElementById("nodetitle");
-    var node_type = document.getElementById("nodetype");
-    var node_descr = document.getElementById("nodedescr");
-
+    let node_title = document.getElementById("nodetitle");
+    let node_type = document.getElementById("nodetype");
+    let node_descr = document.getElementById("nodedescr");
+    console.log("displaying node data from...");
+    console.log(node);
     node_form.hidden = false;
     edge_form.hidden = true;
 
@@ -80,10 +82,10 @@ function update_changes_to_graph(graph){
 async function editGraph(graph_id){
     console.log("Loading graph " + graph_id);
     await load_skill_graph_data_from_db(graph_id);
-    graph_table.hidden = true;
+    update_graph_ui_elements()
 }
 /**
-    Graph data is stored in existing_graphs
+    Graph data is stored in existing_graphs as a Node ({node_id:"...", labels:[...], "properties":{...}}
 **/
 function update_graph_list_table(){
     console.log("Updating graph table");
@@ -98,7 +100,7 @@ function update_graph_list_table(){
 
       // Populate cells
       const cellNumber = row.insertCell(0);
-      cellNumber.textContent = i + 1;
+      cellNumber.textContent = i+1;
 
       const cellTitle = row.insertCell(1);
       cellTitle.textContent = graph.title;
@@ -114,38 +116,33 @@ function update_graph_list_table(){
 
 
 async function create_new_graph(title, descr){
-    var graph_form_json = JSON.stringify({
+    const graph_form_json = {
         "title": title,
         "description": descr,
-    });
+    };
     const resp = await fetch("/skillgraph", {
         method: "POST",
         headers:{
             "Content-Type": "application/json"
         },
-        body: graph_form_json
-    })
-    .then(handleErrors)
-    .then(response => {
-        var response_json = response.json();
-        return response_json;
-        })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    })
-    .then(data => {
-        console.log(data);
-        // data should be a JSON holding an
-        // EducItemData
-        var id = data["id"];
-        var title = data["title"];
-        var descr = data["descr"];
-
-        create_educ_item_selectable_element(id, title, descr);
-    })
-    .catch(function(error) {
-        notifCreator.generate_and_call_error_notif("New graph error", 'An error has occured... : ' + error.message);
+        body: JSON.stringify(graph_form_json),
     });
+    const response_json = await resp.json();
+
+    if (resp.ok){
+        console.log(response_json);
+        // data should be a JSON holding a Node
+        let id = response_json.properties.id;
+        title = response_json.properties.title;
+        descr = response_json.properties.descr;
+
+
+        existing_graphs[id] = response_json
+        update_graph_list_table()
+    } else {
+        console.error(response_json.detail)
+        notifCreator.generate_and_call_error_notif("New graph error", 'An error has occured... : ' + response_json.detail);
+    }
 }
 
 /**
@@ -182,13 +179,12 @@ async function load_skill_graph_data_from_db(graph_id){
         var json_converted = convert_neo4j_graph(nodes, relationships);
         graph.load_from_json(graph_id, json_converted.nodes, json_converted.edges);
         notifCreator.generate_and_call_success_notif("Graph loaded!", "");
+
     })
     .catch(function(error) {
        console.log('An error has occured... : ' + error.message);
        notifCreator.generate_and_call_error_notif("Graph process error", 'An error has occured... : ' + error.message);
-       console.log('An error has occured... : ' + error.message);
-    })
-    .then((update_graph_ui_elements));
+    });
 }
 
 
@@ -196,9 +192,15 @@ async function load_skill_graph_data_from_db(graph_id){
     When a graph is loaded, will update current graph UI elements displayed.
 **/
 function update_graph_ui_elements(){
-    if  (!db_graph_id){ return;}
-
-
+    if  (!graph._graph_id){
+        graph_list.hidden = false;
+        node_form.hidden = true;
+        edge_form.hidden = true;
+    } else {
+        graph_list.hidden = true;
+        node_form.hidden = false;
+        edge_form.hidden = false;
+    }
 }
 async function get_all_skillgraphs_from_db(){
 
@@ -212,6 +214,7 @@ async function get_all_skillgraphs_from_db(){
         return response;
         })
     .catch(function(error) {
+        console.error(error);
         notifCreator.generate_and_call_error_notif("Get skillgraph error", error.message);
     })
     .then(data => {
@@ -250,10 +253,14 @@ function convert_neo4j_graph(nodes, edges){
     console.log(nodes);
     console.log(edges);
 
+    // TODO : add the node_type label. It should be one among "Competency", "Skill" and "Knowledge",
+    //        stored as labels in the Neo4j database
     Object.values(nodes).forEach((node) => {
         console.log(node);
+        const node_type = node.labels.find((l) => l.toLowerCase() in NodeType);
         new_nodes_array.push({
             id: node.node_id,
+            node_type: node_type ? node_type : NodeType.Competency,
             title: node.properties.title,
             x: 0,
             y: 0,
@@ -275,17 +282,17 @@ function convert_neo4j_graph(nodes, edges){
 
 
 /** Display data of the node in the side window **/
-function onGraphNodeClick(node){
-    console.log(`Node selected: ${node.id}`);
-    object_edited = node;
-    displayNodeData(node);
+function onGraphNodeClick(object){
+    console.log(`Object received: ${object}`);
+    object_edited = object.node;
+    displayNodeData(object_edited);
 }
 
 /** Display data of the node in the side window **/
-function onGraphEdgeClick(edge){
-    console.log(`Edge selected`);
-    object_edited = edge;
-    displayEdgeData(edge);
+function onGraphEdgeClick(object){
+    console.log(`Object received: ${object}`);
+    object_edited = object.edge;
+    displayEdgeData(object_edited);
 }
 
 /** Removes the current object_edited. **/
@@ -335,9 +342,9 @@ window.onload = function(){
     });
 
     /** Adding graph listeners **/
-    graph.listen("nodeClick", onGraphNodeClick);
-    graph.listen("edgeClick", onGraphEdgeClick);
-    graph.listen("nothingClick", onGraphNothingClick);
+    graph.listen("nodeClicked", onGraphNodeClick);
+    graph.listen("edgeClicked", onGraphEdgeClick);
+    graph.listen("nothingClicked", onGraphNothingClick);
 
     /** When clicking outside the side window, updating the graph object.**/
     document.addEventListener('click', function(event) {
@@ -346,7 +353,7 @@ window.onload = function(){
           console.log('Clicked outside the side window.');
           update_changes_to_graph(graph);
           node_form.hidden = true;
-          node_form.hidden = true;
+          edge_form.hidden = true;
           graph.redrawNodes();
           graph.redrawEdges();
         }
@@ -389,9 +396,9 @@ window.onload = function(){
     };
 
     bt_submit_new_graph.onclick = function(){
-        let graph_create_title = document.getElementById("graph-title");
-        let graph_create_descr = document.getElementById("graph-descr");
-        create_new_graph(graph_create_title.text, graph_create_descr.text).then(r => console.log("Graph creation request sent"));
+        let graph_create_title = document.getElementById("graph-title").value;
+        let graph_create_descr = document.getElementById("graph-descr").value;
+        create_new_graph(graph_create_title, graph_create_descr).then();
     }
 
     bt_load_graph.onclick = function(){

@@ -4,6 +4,7 @@ from . import models, schemas
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional
+from auth_logic import get_password_hash
 from uuid import uuid4
 
 # Some parts of code are retrieved from this GitHub repo : https://github.com/dudikbender/fast-graph/tree/main
@@ -120,34 +121,32 @@ class Neo4jManager:
                                     detail="Operation not permitted, you cannot modify those fields with this method.",
                                     headers={"WWW-Authenticate": "Bearer"})
 
-        node_attributes["id"] = uuid4()
+        node_attributes["id"] = uuid4().hex
 
         unpacked_attributes = 'SET ' + ', '.join(
             f'new_node.{key}=\'{value}\'' for (key, value) in node_attributes.items())
 
         cypher = f"""
-                CREATE (new_node:$label)\n'
-                SET new_node.created_by = $created_by\n'
-                SET new_node.created_time = $created_time\n'
+                CREATE (new_node:{label})\n
+                SET new_node.created_by = $created_by\n
+                SET new_node.created_time = $created_time\n
                 {unpacked_attributes}\n
-                RETURN new_node, LABELS(new_node) as labels, ID(new_node) as id')
+                RETURN new_node, LABELS(new_node) as labels, ID(new_node) as id
                 """
 
         with self._driver.session() as session:
             result = session.run(
                 query=cypher,
                 parameters={
-                    'label': label,
                     'created_by': user.properties.get("pseudo", "?"),
                     'created_time': str(datetime.now(timezone.utc)),
-                    'attributes': node_attributes,
                 },
             )
             user_result = result.single()
 
         return schemas.Node(node_id=user_result["new_node"]['id'],
                             labels=user_result["labels"],
-                            properties=user_result["new_node "])
+                            properties=user_result["new_node"])
 
     def update_node(self, node_id: str, attributes: dict):
         # Check that property to update is not part of base list
@@ -230,7 +229,7 @@ class Neo4jManager:
             result = session.run(
                 query=cypher,
                 parameters={
-                    'created_by': user.properties.get("username", "?"),
+                    'created_by': user.properties.get("pseudo", "?"),
                     'created_time': str(datetime.now(timezone.utc)),
                     'nodeA_property': source_node_property_value,
                     'nodeB_property': target_node_property_value,
@@ -293,7 +292,7 @@ class Neo4jManager:
             result = session.run(
                 query=cypher,
                 parameters={
-                    'created_by': user.properties.get("username", "?"),
+                    'created_by': user.properties.get("pseudo", "?"),
                     'created_time': str(datetime.now(timezone.utc)),
                     'nodeA_id': nodeA_id,
                     'nodeB_id': nodeB_id,
@@ -494,7 +493,7 @@ class Neo4jManager:
                 query=cypher,
                 parameters={
                     'pseudo': user.pseudo,
-                    'password': user.password + "notreallyhashed",
+                    'password': get_password_hash(user.password),
                     'email': user.email,
                     'id': uuid4().hex,
                     'created_by': user.pseudo,
@@ -517,13 +516,13 @@ class Neo4jManager:
 
         # TODO: When creating a User, we also have to link it to every Skill Node
         educ_items = self.get_educ_items(1000000)
-        for educ_item in educ_items:
+        for educ_item in educ_items.nodes:
             relationship_result = self.create_relationship("User",
                                                            "id",
                                                            request_result["new_node"]['id'],
                                                            "EducItem",
                                                            "id",
-                                                           educ_item['id'],
+                                                           educ_item.properties['id'],
                                                            "masters",
                                                            neo4juser,
                                                            {"mastery_level": 0.0})
@@ -699,7 +698,7 @@ class Neo4jManager:
             result = session.run(
                 query=cypher_exercise,
                 parameters={
-                    'created_by': user.properties.get("username", "?"),
+                    'created_by': user.properties.get("pseudo", "?"),
                     'created_time': str(datetime.now(timezone.utc)),
                     'attributes': properties,
                 },
@@ -716,5 +715,7 @@ class Neo4jManager:
             educ_item_nodes = result.data()
 
         for educ_item_node in educ_item_nodes:
-            self.create_relationship(node_exercise["id"], educ_item_node["id"], "needs", user)
-        return node_exercise
+            self.create_relationship(node_exercise["new_node"]["id"], educ_item_node["id"], "needs", user)
+        return schemas.Node(node_id=node_exercise["new_node"]["id"],
+                            labels=node_exercise["labels"],
+                            properties=node_exercise["new_node"])

@@ -2,7 +2,7 @@ import * as db_methods from './exercisedb_methods.js';
 
 
 export const NodeType = {
-	Framework: "framework",
+	Framework: "educframework",
 	Competency: "competency",
 	Skill: "skill",
 	Knowledge: "knowledge",
@@ -47,9 +47,12 @@ export default class Graph {
     return this._current_pressed;
   }
   constructor(opts) {
+
     this.svg = opts.svg;
+
     // this is the graph_id as stored in the Neo4j database.
     this._graph_id = null;
+
     this.nodes = opts.nodes;
     this.edges = this.#mapEdges(opts.edges);
     // current id == maximum id
@@ -89,8 +92,9 @@ export default class Graph {
       K_KEY: "KeyK",
       R_KEY: "KeyR",
       S_KEY: "KeyS",
-
+      I_KEY: "KeyI",
     };
+
 
     this.listeners = {};
 
@@ -106,6 +110,7 @@ export default class Graph {
         this.listeners[eventName] = [];
     }
     this.listeners[eventName].push(callback);
+    console.log(this.listeners[eventName]);
   }
 
   /**
@@ -128,8 +133,8 @@ export default class Graph {
   #mapEdges(edges) {
     // map source and target id to respective node
     return edges.map((e) => ({
-      source: this.nodes.find((n) => n.local_id == e.source),
-      target: this.nodes.find((n) => n.local_id == e.target),
+      source: this.nodes.find((n) => n.local_id === e.source),
+      target: this.nodes.find((n) => n.local_id === e.target),
       label: e.label,
       properties: e.properties,
     }));
@@ -138,7 +143,7 @@ export default class Graph {
   /* Deletes selected node and adjacent edges */
   async deleteNode(node) {
 
-    var edges_to_remove = this.edges.filter((e) => e.source == node || e.target == node);
+    var edges_to_remove = this.edges.filter((e) => e.source === node || e.target === node);
 
     this.nodes = this.nodes.filter((n) => node !== n);
     this.edges = this.edges.filter(
@@ -218,7 +223,7 @@ export default class Graph {
     d3.select(window)
         .on("keydown", (event) => {
               switch (event.key) {
-                // node removal
+
                 case this.consts.BACKSPACE_KEY:
                 case this.consts.DELETE_KEY:
                   if (this.state.selectedNode) {
@@ -275,11 +280,14 @@ export default class Graph {
         this.clearSelection();
         this.emit("nothingClicked", {});
       })
+
       .call(zoom);
 
     this.#defineMarkers();
 
-    // drag behavior
+    // drag behavior :
+    // on shift : trace an Edge from the selected node to another node
+    // else just move the selected node
     const graph = this;
     this.drag = d3
       .drag()
@@ -319,7 +327,7 @@ export default class Graph {
               !(edge.source === source && edge.target === target) &&
               !(edge.source === target && edge.target === source)
           );
-          var newEdge = { source: source, target: target, label: "", properties: {}};
+          var newEdge = {source: source, target: target, label: "", properties: {}};
           db_methods.createEdge(newEdge);
         }
       });
@@ -406,9 +414,12 @@ export default class Graph {
   }
 
   /**
-  Emits the nodeClicked event when left-clicking a node.
+   Create the new Nodes. Emits the nodeClicked event when left-clicking a node.
+   mouseover: should display the full title.
   **/
   #enterNodes(enter) {
+
+    const div_tooltip = enter.append("div").attr("class", "tooltip-node").style("opacity", 0);
     const nodes = enter
       .append("g")
       .attr("class", "node")
@@ -424,26 +435,48 @@ export default class Graph {
       })
       .on("mouseover", (event, d) => {
         this.state.mouseOverNode = d;
+        d3.select(event.target).transition()
+               .duration(50)
+               .attr('opacity', '.85');
+
+        div_tooltip.html(d.title)
+               .style("left", (event.pageX + 10) + "px")
+               .style("top", (event.pageY - 15) + "px")
+               .transition()
+               .duration(150)
+               .style("opacity", 0.55);
       })
-      .on("mouseout", () => {
+
+      .on("mouseout", (event, d) => {
+        event.stopPropagation();
         this.state.mouseOverNode = null;
+        d3.select(event.target).transition()
+               .duration(50)
+               .attr('opacity', '1');
+        div_tooltip.transition()
+               .duration(50)
+               .style("opacity", 1);
       })
       .on("click", (event, d) => {
         event.stopPropagation();
+        const nodeClicked = d;
+        console.log(d);
         if (event.shiftKey) {
-          this.#editNodeLabel(d);
+          this.#editNodeLabel(nodeClicked);
         } else {
-          this.state.selectedNode = d;
+          this.state.selectedNode = nodeClicked;
           this.state.selectedEdge = null;
+          console.log("nodeclicked: " + nodeClicked);
           this.emit("nodeClicked", {
-            "node": d,
+            "node": nodeClicked,
           });
           this.redraw();
         }
       })
       .call(this.drag);
 
-    nodes.append("circle").attr("r", String(this.consts.NODE_RADIUS));
+    nodes.append("circle").attr("r", String(this.consts.NODE_RADIUS))
+                          .attr("stroke", "black")
     nodes.append("text").text((d) => d.title);
   }
 
@@ -475,7 +508,7 @@ export default class Graph {
       })
       .on("keydown", (event, d) => {
         event.stopPropagation();
-        if (event.key == this.consts.ENTER_KEY) {
+        if (event.key === this.consts.ENTER_KEY) {
           event.target.blur();
         }
       })
@@ -643,14 +676,14 @@ export default class Graph {
   /**
    * Create a Graph from data received from Neo4j app.
    * @param graph_id The graph_id as stored in the Neo4j DB.
-   * @param nodes A list of Nodes without local_id. They have "node_id" key.
+   * @param nodes A list of Nodes without local_id. They have "node_id", "labels" ([...]) and properties keys.
    * @param edges A list of Edges.
+   * TODO : add the node_type key to the objects
    */
   load_from_json(graph_id, nodes, edges){
     this._graph_id = graph_id;
     this.nodeId = nodes.length;
     // edges stores db_id and not local_id, so we should convert them.
-    console.log("load_from_json");
     // associates the node's database id to the local_id we will give here.
     var db_id_to_local_id = {};
     for(let i = 0; i<nodes.length; i++){
@@ -660,7 +693,6 @@ export default class Graph {
     console.log("db_id_to_local_id: ");
     console.log(db_id_to_local_id);
 
-    console.log("local_ids are set");
     this.nodes = nodes;
     console.log(nodes);
     console.log(this.nodes);

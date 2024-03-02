@@ -1,13 +1,12 @@
+import sys
+
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
 import time
 from datetime import datetime, timedelta
 from fastapi import Depends, Request, FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
-import database.crud as crud
-import database.crud_neo4j as crud_neo4j
 from jose.exceptions import JOSEError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -33,15 +32,6 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def authenticate_user(db, username: str, password: str):
-    user = db.get_user_by_pseudo(username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
-
-
 def decode_jwt(token: str) -> dict:
     if token is None:
         return {}
@@ -49,7 +39,7 @@ def decode_jwt(token: str) -> dict:
         decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return decoded_token if decoded_token["exp"] >= time.time() else None
     except JWTError as e:
-        print(e)
+        print(e, file=sys.stderr)
         return {}
 
 
