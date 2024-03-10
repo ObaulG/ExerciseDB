@@ -12,6 +12,9 @@ from uuid import uuid4
 # List of acceptable node labels and relationship types
 node_labels = ['User', 'Admin', 'Developper', 'EducFramework', 'EducItem', 'Competency', 'Knowledge', "Skill",
                'Exercise', "Course", "Resource"]
+
+educ_item_valid_labels = {'Competency', 'Knowledge', "Skill"}
+
 relationship_types = ['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency",
                       "requires",
                       "isComplexificationOf", "isLeverOfUnderstandingOf", "masters", "needs"]
@@ -99,6 +102,19 @@ class Neo4jManager:
         # Return Nodes response with collection as list
         return node_list
 
+    def get_node_by_id(self, node_id: str):
+        cypher = "MATCH (n) WHERE n.id = $node_id RETURN n, LABELS(n)"
+        with self._driver.session() as session:
+            result = session.run(query=cypher,
+                                 parameters={'id': node_id})
+            result_data = result.data()
+            if not result_data:
+                return None
+            node_data = result_data[0]
+
+        return schemas.Node(node_id=node_data["properties"]["id"],
+                            labels=node_data["labels"],
+                            properties=node_data["properties"])
     def create_node(self, label: str, node_attributes: dict, user: schemas.Node):
         # Check that node is not User
         if label == 'User':
@@ -478,13 +494,16 @@ class Neo4jManager:
         db_user_by_pseudo = self.get_user_by_pseudo(user.pseudo)
         if db_user_by_pseudo:
             raise HTTPException(status_code=400, detail="Pseudo is already used.")
+
+        current_date = str(datetime.now(timezone.utc))
         cypher = """CREATE (new_node:User {
                                 pseudo:$pseudo, 
                                 password:$password, 
                                 email:$email, 
                                 id:$id, 
                                 created_by:$created_by, 
-                                created_time:$created_time})
+                                created_time:$created_time,
+                                last_connection_time:$last_connection_time})
 
                     RETURN new_node, LABELS(new_node) as labels, ID(new_node) as id
                     """
@@ -497,7 +516,8 @@ class Neo4jManager:
                     'email': user.email,
                     'id': uuid4().hex,
                     'created_by': user.pseudo,
-                    'created_time': str(datetime.now(timezone.utc)),
+                    'created_time': current_date,
+                    'last_connection_time': current_date,
                 },
             )
             result_data = result.data()
@@ -529,6 +549,17 @@ class Neo4jManager:
 
         return neo4juser
 
+    def update_user_last_connection(self, user: schemas.Node):
+        current_date = str(datetime.now(timezone.utc))
+        cypher = "MATCH (u:User {id:$id}) SET u.last_connection_time = $current_date"
+        with self._driver.session() as session:
+            result = session.run(
+                query=cypher,
+                parameters={
+                    'id': user.properties["id"],
+                    'current_date': current_date,
+                },
+            )
     def read_node_id(self, node_id: str):
         """
         **Retrieves data about a node in the graph, based on node ID.**
@@ -549,13 +580,6 @@ class Neo4jManager:
                                  parameters={'id': node_id})
 
             node_data = result.data()[0]
-
-        # Check node for type User, and send error message if needed
-        # if 'User' in node_data['labels']:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        #         detail="Operation not permitted, please use User endpoints to retrieve user information.",
-        #         headers={"WWW-Authenticate": "Bearer"})
 
         # Return Node response
         return schemas.Node(node_id=node_data['id'],
@@ -656,6 +680,44 @@ class Neo4jManager:
 
     def update_educ_framework(self, node_id: str, new_attributes: dict):
         return self.update_node(node_id, new_attributes)
+
+    def update_educ_item_labels(self, node_id: str, new_labels: list[str]):
+        """
+
+        :param node_id:
+        :param new_labels: The list of new labels to add to this node. The EducItem label should remain,
+                           and one of the extra label should be one from the list given in the metamodel
+                           (Competency, Skill, Knowledge)
+        :return:
+        """
+        node = self.get_node_by_id(node_id)
+        if not node:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                detail="Node not found.",
+                                headers={"WWW-Authenticate": "Bearer"})
+
+        # if at least 1 label given is not valid, we raise an Exception
+        if sum(map(lambda x: 1 if x not in educ_item_valid_labels else 0, new_labels)) > 0:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                detail="Operation not valid. Cannot set one of the labels given",
+                                headers={"WWW-Authenticate": "Bearer"})
+
+        # holds the label among educ_item_valid_labels items
+        educitem_labels = list(set(node.labels).intersection(educ_item_valid_labels))
+        new_labels_to_assign = list(set(new_labels).intersection(educ_item_valid_labels))
+
+        # we must remove the label if it exists (if not, since REMOVE is idenmpotent, we ask
+        # to remove a non-existant label.
+
+        cypher = (f"MATCH (n:EducItem) WHERE n.id = $node_id"
+                  "REMOVE n:{educitem_labels[0] if educitem_labels else a}"
+                  "SET n:{new_labels_to_assign[0]}"
+                  "RETURN n, LABELS(n)")
+
+        with self._driver.session() as session:
+            result = session.run(query=cypher,
+                                 parameters={'node_id': node_id})
+            node_data = result.data()[0]
 
     # /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
     # EducItem methods

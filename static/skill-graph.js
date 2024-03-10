@@ -34,6 +34,7 @@ const keyToNodeType = {
     "KeyS": NodeType.Skill,
 }
 
+
 /** See https://github.com/kldtz/graph-editor/blob/main/graph.js
     This class is based on the D3 hierarchy class. A Graph stores
     Nodes and Edges separately.
@@ -67,6 +68,7 @@ export default class Graph {
       shiftNodeDrag: false,
       selectedNode: null,
       selectedEdge: null,
+      mouseInSVG: false,
     };
 
     /**
@@ -142,7 +144,8 @@ export default class Graph {
 
   /* Deletes selected node and adjacent edges */
   async deleteNode(node) {
-
+    // We can't delete the framework node.
+    if (node.type === NodeType.Framework){return;}
     var edges_to_remove = this.edges.filter((e) => e.source === node || e.target === node);
 
     this.nodes = this.nodes.filter((n) => node !== n);
@@ -204,6 +207,10 @@ export default class Graph {
 
     var resp = await db_methods.create_edge(edge)
   }
+
+  manualDraw(){
+    this.#draw();
+  }
   /**
   Add the keydown event callback on the graph :
   - On DELETE_KEY down, will remove the current selected
@@ -224,8 +231,10 @@ export default class Graph {
         .on("keydown", (event) => {
               switch (event.key) {
 
+                // we should delete the node only if the mouse is inside the Graph view
                 case this.consts.BACKSPACE_KEY:
                 case this.consts.DELETE_KEY:
+                  if (!this.state.mouseInSVG) {return;}
                   if (this.state.selectedNode) {
                     event.preventDefault();
                     this.deleteNode(this.state.selectedNode);
@@ -257,6 +266,12 @@ export default class Graph {
 
     // prepare SVG by adding listeners
     this.svg
+      .on("mouseenter", (event, d) => {
+          this.state.mouseInSVG = true;
+        })
+      .on("mouseleave", (event, d) => {
+          this.state.mouseInSVG = false;
+        })
       .on("mousedown", (event, d) => {
           /** "is the shiftKey pressed with the mouse click"?
               we can't do that with basic letter keys.**/
@@ -273,7 +288,6 @@ export default class Graph {
               let nodetype = keyToNodeType[this._current_pressed];
               this.addSkillNode((this.nodeId + 1).toString(), pos[0], pos[1], nodetype, "");
           }
-
       })
       // click outside of elements
       .on("click", () => {
@@ -646,19 +660,6 @@ export default class Graph {
 
   #edgeId(d) {
     return String(d.source.local_id) + "+" + String(d.target.local_id);
-  }
-
-  async clear() {
-    const doDelete = window.confirm(
-      "Do you really want to delete the whole graph?"
-    );
-    if (doDelete) {
-      this.nodes = [];
-      this.edges = [];
-      this.redraw();
-    }
-
-    var resp = await db_methods.clear_graph()
   }
 
   /**

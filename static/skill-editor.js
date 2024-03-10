@@ -3,6 +3,8 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import Graph from './skill-graph.js';
 import {NodeType} from "./skill-graph.js";
 import * as notifCreator from './notification_creator.js';
+import * as db_methods from './exercisedb_methods.js';
+
 
 var side_window;
 var node_form;
@@ -12,6 +14,11 @@ var graph_list;
 var graph_table;
 var graph_create_form;
 var node_types;
+
+/**
+ *  Stores the reference of the object edited in the Graph.
+ * @type {object}
+ */
 var object_edited = null;
 var graph;
 var existing_graphs = {};
@@ -29,19 +36,23 @@ function handleErrors(response) {
     TODO: Should also display properties and labels.
 **/
 function displayNodeData(node){
+    let node_id = document.getElementById("nodeid");
     let node_title = document.getElementById("nodetitle");
     let node_type = document.getElementById("nodetype");
     let node_descr = document.getElementById("nodedescr");
+
     console.log("displaying node data from...");
     console.log(node);
     node_form.hidden = false;
     edge_form.hidden = true;
 
     if(!node){
+        node_id.value = "";
         node_title.value = "";
         node_type.value = "";
         node_descr.value = "";
     } else {
+        node_id.value = node.id;
         node_title.value = node.title;
         node_type.value = node.node_type;
         node_descr.value = node.descr;
@@ -62,17 +73,31 @@ function displayEdgeData(edge){
 }
 
 
-/** When finished to edit properties of node or edge from object_edited. **/
-function update_changes_to_graph(graph){
+/** When finished to edit properties of node or edge from object_edited.
+ * Retreive the data from the object editor, push it to the Graph,
+ * then to the database.
+ * **/
+function commit_changes_of_object_edited(){
     if (!object_edited){return;}
-    if ("label" in object_edited){
+    if ("node_type" in object_edited){
         console.log("node edited. Pushing changes to graph");
-        //...
+        let node_id = document.getElementById("nodeid");
+        let node_title = document.getElementById("nodetitle");
+        let node_type = document.getElementById("nodetype");
+        let node_descr = document.getElementById("nodedescr");
+
+        object_edited.id = node_id.value;
+        object_edited.title = node_title.value;
+        object_edited.node_type = node_type.value;
+        object_edited.descr = node_descr.value;
+
+        db_methods.updateNode(object_edited);
     }
-    else if ("node_type" in object_edited){
+    else if ("label" in object_edited){
         console.log("edge edited. Pushing changes to graph");
-        //...
+        db_methods.updateEdge(object_edited);
     }
+    graph.manualDraw();
 }
 
 /**
@@ -120,22 +145,14 @@ async function create_new_graph(title, descr){
         "title": title,
         "description": descr,
     };
-    const resp = await fetch("/skillgraph", {
-        method: "POST",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(graph_form_json),
-    });
+    const resp = await db_methods.create_framework(graph_form_json);
     const response_json = await resp.json();
-
     if (resp.ok){
         console.log(response_json);
         // data should be a JSON holding a Node
         let id = response_json.properties.id;
         title = response_json.properties.title;
         descr = response_json.properties.descr;
-
 
         existing_graphs[id] = response_json
         update_graph_list_table()
@@ -151,17 +168,10 @@ async function create_new_graph(title, descr){
 **/
 async function load_skill_graph_data_from_db(graph_id){
 
-    const resp = await fetch("/skillgraph/"+graph_id, {
-        method: "GET"
-    })
-    .then(handleErrors)
-    .then(response => {
-        return response.json();
-        })
-    .catch(function(error) {
-        notifCreator.generate_and_call_error_notif("Load graph error", 'An error has occured... : ' + error.message);
-    })
-    .then(data => {
+    const resp = await db_methods.get_framework_by_id(graph_id);
+    const data = await resp.json();
+
+    if (resp.ok) {
         console.log(data);
         //class GraphNodesEdges(BaseModel):
         //    nodes_count: Optional[int]
@@ -169,24 +179,21 @@ async function load_skill_graph_data_from_db(graph_id){
         //    nodes: Nodes
         //    edges: Edges
 
-        var nodes_count = data["nodes_count"];
+        let nodes_count = data["nodes_count"];
 
         // note: these are Object and not Array !
-        var nodes = data["nodes"]["nodes"];
-        var relationships = data["edges"]["edges"];
-
+        let nodes = data["nodes"]["nodes"];
+        let relationships = data["edges"]["edges"];
         // TODO: the DB can store the app location (x,y) of each node, for each user.
-        var json_converted = convert_neo4j_graph(nodes, relationships);
+        let json_converted = convert_neo4j_graph(nodes, relationships);
         graph.load_from_json(graph_id, json_converted.nodes, json_converted.edges);
         notifCreator.generate_and_call_success_notif("Graph loaded!", "");
-
-    })
-    .catch(function(error) {
-       console.log('An error has occured... : ' + error.message);
-       notifCreator.generate_and_call_error_notif("Graph process error", 'An error has occured... : ' + error.message);
-    });
+    }
+    else {
+       console.log('An error has occured... : ');
+       notifCreator.generate_and_call_error_notif("Graph process error", 'An error has occured...');
+    }
 }
-
 
 /**
     When a graph is loaded, will update current graph UI elements displayed.
@@ -204,21 +211,11 @@ function update_graph_ui_elements(){
 }
 async function get_all_skillgraphs_from_db(){
 
+
     console.log("Retrieving skill graphs...");
-    const resp = await fetch("/educitem/framework/all", {
-        method: "GET",
-    })
-    .then(handleErrors)
-    .then(response => {
-        var response = response.json();
-        return response;
-        })
-    .catch(function(error) {
-        console.error(error);
-        notifCreator.generate_and_call_error_notif("Get skillgraph error", error.message);
-    })
-    .then(data => {
-        console.log(data);
+    const resp = await db_methods.get_frameworks();
+    const data = await resp.json();
+
 
         /**
             class NodeBase(BaseModel):
@@ -230,6 +227,7 @@ async function get_all_skillgraphs_from_db(){
             class Nodes(BaseModel):
                 nodes: List[Node]
         **/
+    if (resp.ok){
         var nodes = data["nodes"];
 
 
@@ -240,13 +238,21 @@ async function get_all_skillgraphs_from_db(){
         }
         update_graph_list_table();
         notifCreator.generate_and_call_success_notif("Skillgraphs downloaded", nodes.length + " nodes received.");
-    })
-    .catch(function(error) {
-        notifCreator.generate_and_call_error_notif("Get skillgraph error", error.message);
-    });
+    }
+    else{
+        notifCreator.generate_and_call_error_notif("Get skillgraph error");
+    }
 }
 
+/**
+ * Convert the nodes and edges received from the Neo4j database to
+ * a version used by the Skill Editor.
+ * @param nodes
+ * @param edges
+ * @returns {{nodes: *[], edges: *[]}}
+ */
 function convert_neo4j_graph(nodes, edges){
+
     var new_nodes_array = [];
     var new_edges_array = [];
     console.log("converting neo4j graph");
@@ -260,7 +266,7 @@ function convert_neo4j_graph(nodes, edges){
         const node_type = node.labels.find((l) => l.toLowerCase() in NodeType);
         new_nodes_array.push({
             id: node.node_id,
-            node_type: node_type ? node_type : NodeType.Competency,
+            node_type: node_type ? node_type.toLowerCase() : NodeType.Competency,
             title: node.properties.title,
             x: 0,
             y: 0,
@@ -295,9 +301,13 @@ function onGraphEdgeClick(object){
     displayEdgeData(object_edited);
 }
 
-/** Removes the current object_edited. **/
+/** Update changes done to the object_edited to the DB set it to null . **/
 function onGraphNothingClick(){
     console.log("NothingClick detected!");
+
+    // also must be updated to the graph
+
+    commit_changes_of_object_edited();
 }
 
 
@@ -351,7 +361,6 @@ window.onload = function(){
         // Check if the clicked target is not a descendant of myElement
         if (!side_window.contains(event.target)) {
           console.log('Clicked outside the side window.');
-          update_changes_to_graph(graph);
           node_form.hidden = true;
           edge_form.hidden = true;
           graph.redrawNodes();

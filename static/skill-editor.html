@@ -9,12 +9,13 @@
     <link href="graph.css" rel="stylesheet">
     <link rel="stylesheet" href="notifications.css">
 
+    <script type="module" src="exercisedb_methods.js"></script>
     <script src="https://d3js.org/d3.v6.min.js"></script>
 
     <script type="module" src="skill-graph.js"></script>
 <!--    <&#45;&#45; <script type="module" src="skills.js"></script> !&ndash;&gt;-->
     <script type="module" src="cookie_helper.js"></script>
-    <script type="module" src="exercisedb_methods.js"></script>
+
 
     <script src="notifications.js"></script>
     <script type="module" src="notification_creator.js"></script>
@@ -30,6 +31,7 @@
             <li><a href="#">Home</a></li>
             <li><a href="">Exercises</a></li>
             <li><a href="/exercise_submit">Submit exercise</a></li>
+            <li><a href="/skill-editor"> Skill graphs</a> </li>
             <li><a href="#">Contact</a></li>
         </ul>
         <nav class="navigation" id="graph-nav">
@@ -53,11 +55,6 @@
             <header>
                 <h1> Object Editor</h1>
             </header>
-            <datalist id="node-types">
-              <option value="Competency">
-              <option value="Skill">
-              <option value="Knowledge">
-            </datalist>
 
             <div id="graph-form" class="basic-window">
                 <h1>Create a new graph</h1>
@@ -82,11 +79,19 @@
             </div>
 
             <div id="node-editor">
+                <datalist id="node-types">
+                <option value="Competency"></option>
+                  <option value="Skill"></option>
+                  <option value="Knowledge"></option>
+                </datalist>
+                <label for="nodeid"> Node Id</label>
+                <input type="text" class="form-control" id="nodeid" readonly>
+
                 <label for="nodetitle">Node title</label>
                 <input type="text" class="form-control" id="nodetitle" placeholder="">
                 <label for="nodetype">Node type</label>
                 <input class="form-control" id="nodetype" list="node-types">
-                <label for="nodedescr">Node type</label>
+                <label for="nodedescr">Node description</label>
                 <input type="text" class="form-control" id="nodedescr">
 
                 <div class="json-properties">

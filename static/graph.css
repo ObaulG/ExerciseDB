@@ -2,7 +2,10 @@
 
 :root{
     --text-color: white;
-    --background-color: black;
+    --background-color-node: black;
+    --competency-node-color: blue;
+    --skill-node-color: yellow;
+    --knowledge-color: brown;
     --node-bg-color: grey;
 }
 g.node > circle {
@@ -49,7 +52,7 @@ text.hidden {
 
 path.line.hidden {
     stroke-width: 0;
-    stroke: var(--background-color);
+    stroke: var(--background-color-node);
 }
 
 path.line {

@@ -1,6 +1,16 @@
+import * as notifCreator from './notification_creator.js';
 
-
-var db_graph_id;
+export const ROUTES = {
+    addNode: "/educitem/node",
+    deleteNode: "/educitem/node",
+    updateNode: "/educitem/node",
+    addEdge: "/educitem/edge",
+    deleteEdge: "/educitem/edge",
+    updateEdge: "/educitem/edge",
+    getSkillGraph: "/educitem/skillgraph",
+    getAllFrameworks: "/educitem/framework/all",
+    createFramework: "/educitem/framework/new",
+}
 
 function handleErrors(response) {
     if (!response.ok) {
@@ -9,165 +19,67 @@ function handleErrors(response) {
     return response;
 }
 
-async function add_node(node){
+/**
+ * Make a call to the Python app linked to the Neo4j database.
+ * @param route A String representing the route to request
+ * @param method HTTP method
+ * @param data An Object to add to the body of the request
+ * @returns {Promise<Response>} The promise containing the Response object.
+ */
+export async function db_call(route, method, data){
+    let resp;
+    let init_data;
+    if (method === "GET"){
+        init_data = {
+            method: method,
+        };
+    } else {
+        init_data = {
+            method: method,
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        };
+    }
+    try{
+        resp = await fetch(route, init_data);
+    }
+    catch (e){
+        console.error(e)
+        notifCreator.generate_and_call_error_notif("Server error", e.toString());
+    }
 
-    const node_json = JSON.stringify(node);
-    const resp = await fetch("/educitem", {
-        method: "POST",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: node_json
-    })
-    .then(handleErrors)
-    .then(response => {
-        var response = response.json();
-        return response;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    })
-    .then(data => {
-        console.log(data);
-        //class GraphNodesEdges(BaseModel):
-            //nodes_count: Optional[int]
-            //relationships_count: Optional[int]
-            //nodes: Nodes
-            //relationships: Relationships
-        return data
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    });
     return resp;
 }
 
-async function delete_node(node){
-    const node_json = JSON.stringify(node);
-    const resp = await fetch("/educitem", {
-        method: "DELETE",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: node_json
-    })
-    .then(handleErrors)
-    .then(response => {
-        var response = response.json();
-        return response;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    })
-    .then(data => {
-        console.log(data);
-        console.log("Node deleted");
-        //class GraphNodesEdges(BaseModel):
-            //nodes_count: Optional[int]
-            //relationships_count: Optional[int]
-            //nodes: Nodes
-            //relationships: Relationships
-        return data;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    });
-    return resp
+export async function add_node(node){
+    return await db_call(ROUTES.addNode, "POST", node);
 }
 
-async function add_skill_node(node){
-    const node_json = JSON.stringify(node);
-    const resp = await fetch("/educitem", {
-        method: "POST",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: node_json
-    })
-    .then(handleErrors)
-    .then(response => {
-        var response = response.json();
-        return response;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    })
-    .then(data => {
-        console.log(data);
-        //class GraphNodesEdges(BaseModel):
-            //nodes_count: Optional[int]
-            //relationships_count: Optional[int]
-            //nodes: Nodes
-            //relationships: Relationships
-        return data;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    });
-    return resp;
+export async function delete_node(node){
+    return await db_call(ROUTES.deleteNode, "DELETE", node);
 }
 
-async function create_edge(edge){
-    const edge_json = JSON.stringify(edge);
-    const resp = await fetch("/educitem", {
-        method: "POST",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: edge_json
-    })
-    .then(handleErrors)
-    .then(response => {
-        var response = response.json();
-        return response;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    })
-    .then(data => {
-        console.log(data);
-        //class GraphNodesEdges(BaseModel):
-            //nodes_count: Optional[int]
-            //relationships_count: Optional[int]
-            //nodes: Nodes
-            //relationships: Relationships
-        return data;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    });
-    return resp;
+export async function create_edge(edge){
+    return await db_call(ROUTES.addEdge, "POST", edge);
 }
 
-async function delete_edge(edge){
-    const edge_json = JSON.stringify(node);
-    const resp = await fetch("/educitem", {
-        method: "DELETE",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: edge_json
-    })
-    .then(handleErrors)
-    .then(response => {
-        var response = response.json();
-        return response;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    })
-    .then(data => {
-        console.log(data);
-        console.log("Node deleted");
-        //class GraphNodesEdges(BaseModel):
-            //nodes_count: Optional[int]
-            //relationships_count: Optional[int]
-            //nodes: Nodes
-            //relationships: Relationships
-        return data;
-    })
-    .catch(function(error) {
-        console.log('An error has occured... : ' + error.message);
-    });
-    return resp;
+export async function delete_edge(edge){
+    return await db_call(ROUTES.deleteEdge, "DELETE", edge);
+}
+
+export async function update_edge(edge){
+    return await db_call(ROUTES.updateEdge, "POST", edge);
+}
+
+export async function get_framework_by_id(id){
+    return await db_call(ROUTES.getSkillGraph + "/" + id, "GET", {})
+}
+
+export async function get_frameworks(){
+    return await db_call(ROUTES.getAllFrameworks, "GET", {})
+}
+export async function create_framework(data){
+    return await db_call(ROUTES.createFramework, "POST", data);
 }

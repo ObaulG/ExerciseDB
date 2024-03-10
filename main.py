@@ -13,8 +13,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from database.schemas import EducItemDataSubmit
-
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import HTMLResponse
@@ -191,6 +189,7 @@ async def login_for_access_token(
         data={"sub": user.properties["pseudo"]}, expires_delta=access_token_expires
     )
 
+    db.update_user_last_connection(user)
     response.set_cookie(key="access_token",
                         value=f"{access_token}",
                         httponly=True)
@@ -229,13 +228,13 @@ def get_educframework_data_by_id(framework_id: str, db: Neo4jManager = Depends(g
     educ_framework=db.get_educ_framework_by_id(framework_id)
     return educ_framework
 
-@app.get("/skillgraph/{framework_id}", response_model=schemas.GraphNodesEdges)
+@app.get("/educitem/skillgraph/{framework_id}", response_model=schemas.GraphNodesEdges)
 def get_skill_graph(framework_id: str, db: Neo4jManager = Depends(get_neo4j_db)):
     skill_graph = db.get_skill_graph(framework_id)
     return skill_graph
 
 
-@app.post("/skillgraph", response_model=schemas.Node)
+@app.post("/educitem/framework/new", response_model=schemas.Node)
 async def create_skill_graph(create_form: schemas.SkillGraphCreate,
                              db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
                              request: Request):
@@ -249,6 +248,22 @@ def get_educ_items_list(db: Neo4jManager = Depends(get_neo4j_db)):
     return educ_items
 
 
+@app.put("/educitem/node", response_model=schemas.Node)
+async def create_node(data: schemas.EducItemDataSubmit,
+                      db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
+                      request: Request):
+    user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
+    new_node = db.create_node()
+@app.post("/educitem/node")
+def update_node(db: Neo4jManager = Depends(get_neo4j_db)):
+    """
+    Called when a Node is updated. If the Node was created in the App, it should not
+    have any id
+    :param db:
+    :return:
+    """
+    educ_items = db.get_educ_items()
+    return educ_items
 # @app.post("/edge", response_model=schemas.Relationship)
 # def add_edge_in_skill_graph(edge: schemas.Edge,
 #                             current_user: Annotated[User, Depends(get_current_user_neo4j)],
