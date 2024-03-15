@@ -57,6 +57,10 @@ function displayNodeData(node){
         node_type.value = node.node_type;
         node_descr.value = node.descr;
     }
+
+    // We should not be able to edit the Framework node label
+    node_title.disable = (node.node_type === NodeType.Framework);
+
 }
 
 function displayEdgeData(edge){
@@ -181,13 +185,15 @@ async function load_skill_graph_data_from_db(graph_id){
 
         let nodes_count = data["nodes_count"];
 
-        // note: these are Object and not Array !
+        // note: data["nodes"] is Object and not Array !
         let nodes = data["nodes"]["nodes"];
         let relationships = data["edges"]["edges"];
         // TODO: the DB can store the app location (x,y) of each node, for each user.
         let json_converted = convert_neo4j_graph(nodes, relationships);
         graph.load_from_json(graph_id, json_converted.nodes, json_converted.edges);
         notifCreator.generate_and_call_success_notif("Graph loaded!", "");
+        // the 1st node should always be the EducFramework Node
+        document.querySelector("#skillgraphname").innerHTML = nodes[0].properties.title;
     }
     else {
        console.log('An error has occured... : ');
@@ -210,8 +216,6 @@ function update_graph_ui_elements(){
     }
 }
 async function get_all_skillgraphs_from_db(){
-
-
     console.log("Retrieving skill graphs...");
     const resp = await db_methods.get_frameworks();
     const data = await resp.json();
@@ -306,13 +310,11 @@ function onGraphNothingClick(){
     console.log("NothingClick detected!");
 
     // also must be updated to the graph
-
     commit_changes_of_object_edited();
 }
 
 
 window.onload = function(){
-
 /**
     var initial_nodes_data = [
         {id: 1, title: "Remise à Niveau en Mathématiques", node_type: NodeType.Framework, description: "", x: 250, y: 450, properties:{}},
@@ -337,6 +339,7 @@ window.onload = function(){
     edge_form.hidden = true;
     graph_create_form = document.getElementById("graph-form");
     graph_create_form.hidden = true;
+
     side_window = document.getElementById("object-editor-window");
     graph_list = document.getElementById("graph-list");
     node_types = [];
@@ -389,9 +392,12 @@ window.onload = function(){
         if (graph_create_form.hidden){return;}
     };
 
+    // Buttons handlers
+
     let bt_create_graph = document.getElementById("create-new-graph");
     let bt_submit_new_graph = document.getElementById("send-graph-create-request")
     let bt_load_graph = document.getElementById("load-existing-graph");
+    let bt_change_graph = document.querySelector(".graph-change");
 
     bt_create_graph.onclick = function(){
         if (graph_create_form.hidden){
@@ -415,4 +421,10 @@ window.onload = function(){
         graph_create_form.hidden = true;
     };
 
+    bt_change_graph.onclick = function(){
+        graph_list.hidden = false;
+        db_graph_id = -1;
+        graph.clear();
+
+    };
 }

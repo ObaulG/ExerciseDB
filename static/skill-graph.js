@@ -1,4 +1,5 @@
 import * as db_methods from './exercisedb_methods.js';
+import * as notifCreator from "./notification_creator";
 
 
 export const NodeType = {
@@ -103,6 +104,12 @@ export default class Graph {
     // Attributes defined in #draw
     this.circles = null;
 
+
+    // If a graph was stored in localSession, we should load it.
+    // Will update this.nodes and this.edges if found.
+    this.loadFromLocalStorage();
+
+
     this.#draw();
 
   }
@@ -174,9 +181,10 @@ export default class Graph {
   async addNode(title, x, y) {
     var node = {
       id: ++this.nodeId,
-      title,
-      x,
-      y,
+      local_id: this.nodeId,
+      title: title,
+      x: x,
+      y: y,
       node_type: NodeType.Competency,
       description: "",
     }
@@ -189,9 +197,10 @@ export default class Graph {
   async addSkillNode(title, x, y, type, descr){
     var node = {
       id: ++this.nodeId,
-      title,
-      x,
-      y,
+      local_id: this.nodeId,
+      title: title,
+      x: x,
+      y: y,
       node_type: type,
       description: descr,
     }
@@ -202,9 +211,9 @@ export default class Graph {
   }
 
   async createEdge(edge){
-    this.edges.push(newEdge);
+    this.edges.push(edge);
     this.redrawEdges();
-
+    console.log(this.edges);
     var resp = await db_methods.create_edge(edge)
   }
 
@@ -227,6 +236,7 @@ export default class Graph {
   - when r-clicking, create a Resource Node
   **/
   async #draw() {
+    // listening events in the window.
     d3.select(window)
         .on("keydown", (event) => {
               switch (event.key) {
@@ -331,18 +341,20 @@ export default class Graph {
 
         const target = this.state.mouseOverNode;
 
+        console.log("drag end...\n",source, "-", target);
         if (!source || !target) return;
 
         // source and target are different
         if (source !== target) {
           // remove edge between source and target (any order)
+          /*
           this.edges = this.edges.filter(
             (edge) =>
               !(edge.source === source && edge.target === target) &&
               !(edge.source === target && edge.target === source)
-          );
-          var newEdge = {source: source, target: target, label: "", properties: {}};
-          db_methods.createEdge(newEdge);
+          );*/
+          let newEdge = {source: source, target: target, label: "comprises", properties: {}};
+          this.createEdge(newEdge);
         }
       });
 
@@ -544,9 +556,12 @@ export default class Graph {
     update.select("text").text((d) => d.title);
   }
 
+  // See https://www.d3indepth.com/selections/ for more info...
   redrawEdges() {
+    // select all edges
     this.paths
       .selectAll(".edge")
+      // bind all the edges to the method #edgeId (?)
       .data(this.edges, this.#edgeId)
       .join(
         (enter) => this.#enterEdges(enter),
@@ -556,7 +571,7 @@ export default class Graph {
   }
 
   /**
-  Emits the edgeClicked event when right clicking an edge.
+  Create the new Edges, adding handlers
   **/
   #enterEdges(enter) {
     const edges = enter
@@ -564,17 +579,14 @@ export default class Graph {
       .classed("edge", true)
       .on("click", (event, d) => {
         event.stopPropagation();
-        if (event.shiftKey) {
-          this.#editEdgeLabel(d);
 
-        } else {
-          this.state.selectedEdge = d;
-          this.state.selectedNode = null;
-          this.emit("edgeClicked",{
-            "edge": d,
-          })
-          this.redraw();
-        }
+        this.state.selectedEdge = d;
+        this.state.selectedNode = null;
+        this.emit("edgeClicked",{
+          "edge": d,
+        })
+        this.redraw();
+
       })
       .on("mousedown", (event, d) => {
         event.stopPropagation();
@@ -629,7 +641,7 @@ export default class Graph {
       })
       .on("keydown", (event, d) => {
         event.stopPropagation();
-        if (event.key == this.consts.ENTER_KEY) {
+        if (event.key === this.consts.ENTER_KEY) {
           event.target.blur();
         }
       })
@@ -658,6 +670,11 @@ export default class Graph {
       .text((d) => d.label);
   }
 
+  /**
+   * Returns the id of the edge d used in CSS attributes.
+   * @param d the Edge object
+   * @returns {string} {source.local_id}+{target.local_id}
+   */
   #edgeId(d) {
     return String(d.source.local_id) + "+" + String(d.target.local_id);
   }
@@ -679,7 +696,6 @@ export default class Graph {
    * @param graph_id The graph_id as stored in the Neo4j DB.
    * @param nodes A list of Nodes without local_id. They have "node_id", "labels" ([...]) and properties keys.
    * @param edges A list of Edges.
-   * TODO : add the node_type key to the objects
    */
   load_from_json(graph_id, nodes, edges){
     this._graph_id = graph_id;
@@ -709,17 +725,60 @@ export default class Graph {
     console.log(this.edges);
     this.redraw();
   }
+
+  loadFromLocalStorage(){
+    let graph_json;
+    try{
+      graph_json = JSON.parse(localStorage.getItem("graph"));
+    }
+    catch (e) {
+      console.error(e)
+      notifCreator.generate_and_call_error_notif("Failed to load graph from localSession", e.toString());
+    }
+
+    if (graph_json) {
+      let nodes = graph_json.nodes;
+      let edges = graph_json.edges;
+
+      // for each Edge, we must retrieve the node with the corresponding local_id
+      // it was given.
+      this.edges.forEach((edge) => {
+        edge.source = nodes.find((node)=> node.local_id === edge.source);
+        edge.target = nodes.find((node)=> node.local_id === edge.target);
+      });
+
+      this.nodes = nodes;
+      this.edges = edges;
+
+      notifCreator.generate_and_call_success_notif("Graph loaded from localSession!", "Nice!")
+      localStorage.removeItem("graph");
+    }
+  }
+
+  saveToLocalStorage(){
+    localStorage.setItem("graph", this.serializeString())
+  }
+
   /**
-    TODO: serialize into specific objects to send to the Python back-end.
-  **/
-  serialize() {
-    const saveEdges = this.edges.map((edge) => ({
+   * Return
+   * @returns {*} the list of Edges with their source and target reduced to the local_id of the nodes.
+   */
+  saveEdges(){
+    return this.edges.map((edge) => ({
       source: edge.source.local_id,
       target: edge.target.local_id,
       label: edge.label,
+      properties: edge.properties,
     }));
+  }
+  serializeString(){
+    const savedEdges = this.saveEdges();
+    return JSON.stringify({ nodes: this.nodes, edges: savedEdges });
+  }
+  serializeBlob() {
+    const savedEdges = this.saveEdges();
     return new window.Blob(
-      [window.JSON.stringify({ nodes: this.nodes, edges: saveEdges })],
+      [window.JSON.stringify({ nodes: this.nodes, edges: savedEdges })],
       { type: "text/plain;charset=utf-8" }
     );
   }

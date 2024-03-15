@@ -7,6 +7,7 @@
     --skill-node-color: yellow;
     --knowledge-color: brown;
     --node-bg-color: grey;
+    --edge-color: black;
 }
 g.node > circle {
     stroke: var(--text-color);
@@ -56,7 +57,7 @@ path.line.hidden {
 }
 
 path.line {
-    stroke: var(--text-color);
+    stroke: var(--edge-color);
     stroke-width: 6px;
     marker-end: url("#end-arrow")
 }
@@ -71,7 +72,7 @@ path.line {
 }
 
 marker {
-    fill: var(--text-color);
+    fill: var(--edge-color);
 }
 
 #selected-end-arrow {

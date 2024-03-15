@@ -25,18 +25,18 @@
 
 <body>
 <div class="main-container">
-    <header>
+    <header class="horizontal-nav-bar">
         <ul class="navigation">
             <li><a href="#" class="navigation"><h1>ExerciseDB</h1></a></li>
             <li><a href="#">Home</a></li>
-            <li><a href="">Exercises</a></li>
-            <li><a href="/exercise_submit">Submit exercise</a></li>
-            <li><a href="/skill-editor"> Skill graphs</a> </li>
+            <li><a href="/submit_exercise.html">Exercises</a></li>
+            <li><a href="/skill-editor.html"> Skill graphs</a> </li>
             <li><a href="#">Contact</a></li>
         </ul>
         <nav class="navigation" id="graph-nav">
             <input type="button" name="create-new-graph" id="create-new-graph" value="Create new graph">
             <input type="button" name="load-existing-graph" id="load-existing-graph" value="Load graph">
+            <input type="button" name="graph-change" id="graph-change" value="Change graph">
         </nav>
     </header>
 
@@ -45,7 +45,7 @@
 
         <div id="graph-editor">
             <header>
-                <h1> Skill Graph name</h1>
+                <h1 id="skillgraphname"> Skill Graph name</h1>
             </header>
             <svg id="graph">
 

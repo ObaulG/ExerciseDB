@@ -725,10 +725,11 @@ class Neo4jManager:
     def get_educ_items(self, limit: int = 100):
         return self.generic_get_nodes("EducItem")
 
-    def create_educ_item_from_submit(self, educ_item: schemas.EducItemDataSubmit, user: schemas.Node):
+    def create_educ_item_from_submit(self, educ_item: schemas.EducItemDataCreate, user: schemas.Node):
         educ_item_node = self.create_node(label="EducItem",
                                           node_attributes=educ_item.model_dump(),
                                           user=user)
+
         # when an EducItem is created, it should be linked to each user in the graph.
         users = self.get_users()
         for user in users:

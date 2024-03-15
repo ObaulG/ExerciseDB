@@ -217,25 +217,31 @@ def read_user_by_id(user_id: str, db: Neo4jManager = Depends(get_neo4j_db)):
     return db_user
 
 
-@app.get("/educitem/framework/all", response_model = schemas.Nodes)
+@app.get("/educitem/framework/all", response_model=schemas.Nodes)
 def get_educframeworks(db: Neo4jManager = Depends(get_neo4j_db), skip: int = 0, limit: int = 100):
     educ_frameworks = db.get_educ_frameworks()
     return educ_frameworks
 
 
-@app.get("/educitem/framework/{framework_id}", response_model=list[schemas.SkillGraphData])
+@app.get("/educitem/framework/{framework_id}", response_model=schemas.Node)
 def get_educframework_data_by_id(framework_id: str, db: Neo4jManager = Depends(get_neo4j_db)):
     educ_framework=db.get_educ_framework_by_id(framework_id)
     return educ_framework
 
 @app.get("/educitem/skillgraph/{framework_id}", response_model=schemas.GraphNodesEdges)
 def get_skill_graph(framework_id: str, db: Neo4jManager = Depends(get_neo4j_db)):
+    """
+    Return a schemas.GraphNodesEdges object containing a graph of all skills in this EducFramework.
+    :param framework_id:
+    :param db:
+    :return:
+    """
     skill_graph = db.get_skill_graph(framework_id)
     return skill_graph
 
 
 @app.post("/educitem/framework/new", response_model=schemas.Node)
-async def create_skill_graph(create_form: schemas.SkillGraphCreate,
+async def create_skill_graph(create_form: schemas.EducFrameworkCreate,
                              db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
                              request: Request):
     user = await get_current_user_neo4j(request.cookies.get("access_token"), db);
@@ -249,11 +255,13 @@ def get_educ_items_list(db: Neo4jManager = Depends(get_neo4j_db)):
 
 
 @app.put("/educitem/node", response_model=schemas.Node)
-async def create_node(data: schemas.EducItemDataSubmit,
+async def create_node(data: schemas.EducItemDataCreate,
                       db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
                       request: Request):
     user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
-    new_node = db.create_node()
+    new_node = db.create_educ_item_from_submit(data, user)
+
+
 @app.post("/educitem/node")
 def update_node(db: Neo4jManager = Depends(get_neo4j_db)):
     """
@@ -264,6 +272,8 @@ def update_node(db: Neo4jManager = Depends(get_neo4j_db)):
     """
     educ_items = db.get_educ_items()
     return educ_items
+
+
 # @app.post("/edge", response_model=schemas.Relationship)
 # def add_edge_in_skill_graph(edge: schemas.Edge,
 #                             current_user: Annotated[User, Depends(get_current_user_neo4j)],

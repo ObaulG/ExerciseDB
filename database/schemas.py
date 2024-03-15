@@ -4,81 +4,15 @@ from typing import Optional, List
 from pydantic import BaseModel
 from enum import IntEnum
 
+# /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\
+# App Schemas (Users and Auth)
+# \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/
 
 class EducItemType(IntEnum):
     KNOWLEDGE = 1
     SKILL = 2
     COMPETENCE = 3
 
-
-class EducItemData(BaseModel):
-    """
-    Describes the basic data of a educational item. The item should be linkable to other items,
-    thus forming a graph.
-    """
-    id: int
-    type: EducItemType
-    code: str = ""
-    title: str
-    description: str
-
-
-class EducItemDataSubmit(BaseModel):
-    """
-    Data sent by a client to submit an EducItemData
-    """
-    title: str
-    type: int
-    description: str
-
-
-class EducItemMastery(BaseModel):
-    """
-    Describe a mastery level of a EducItem.
-    """
-    id_educ_item: int
-    mastery: int
-
-
-class EducItemNode(BaseModel):
-    """
-    Representation of a COMPER educational skill.
-    """
-    educ_item: EducItemData
-    composed_of: list
-    exercises: list
-    lesson: list
-
-class EducItemList(BaseModel):
-    educ_item_id_list: list[int]
-
-class SkillReferential(BaseModel):
-    educ_nodes: list[EducItemNode]
-
-
-class SkillGraphCreate(BaseModel):
-    title: str
-    description: Optional[str]
-
-class SkillGraphData(SkillGraphCreate):
-    id: str
-
-class ListSkillGraphData(BaseModel):
-    skillgraphs: list[SkillGraphData]
-
-class SkillGraphNode(BaseModel):
-    graph_id: int
-    node_id: int
-
-class SkillGraphNodeData(SkillGraphNode):
-    node_data: EducItemData
-
-
-class SkillGraphEdge(BaseModel):
-    graph_id: int
-    node_start: int
-    node_end: int
-    link_name: str = ""
 
 class UserBase(BaseModel):
     pseudo: str
@@ -97,7 +31,6 @@ class UserLogin(BaseModel):
 class User(UserLogin):
     id: int
     is_active: bool
-    educ_items: list[EducItemMastery] = []
 
     class Config:
         orm_mode = True
@@ -119,6 +52,59 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str
+
+# /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\
+# Client input Schemas
+# \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/
+
+class EducFrameworkCreate(BaseModel):
+    title: str
+    description: str
+
+class EducItemDataCreate(BaseModel):
+    """
+    Describes the basic data of an educational item created by a client.
+    """
+    title: str
+    type: str
+    description: str
+
+
+class EducItemDataUpdate(BaseModel):
+    """
+    Data sent by a client to update an EducItemData when it is created in the graph.
+    """
+    id: str
+    title: str
+    type: str
+    description: str
+    x: Optional[float] = 0.0
+    y: Optional[float] = 0.0
+
+class EducItemData(BaseModel):
+    """
+    Describes the basic data of a educational item. The item should be linkable to other items,
+    thus forming a graph.
+    """
+    id: int
+    type: EducItemType
+    code: str = ""
+    title: str
+    description: str
+
+class EdgeItemUpdate(BaseModel):
+    source_id: str
+    target_id: str
+    label: str
+    properties: dict
+
+class EducItemMastery(BaseModel):
+    """
+    Describe a mastery level of a EducItem.
+    """
+    id_educ_item: int
+    mastery: int
+
 
 
 class BaseExercise(BaseModel):
@@ -158,6 +144,10 @@ class StaticExercise(BaseModel):
 
 class Exercises(BaseModel):
     exercises: list[StaticExercise]
+
+# /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\
+# Neo4j Schemas
+# \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/
 
 
 # Node response models
