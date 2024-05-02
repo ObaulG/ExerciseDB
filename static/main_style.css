@@ -159,6 +159,7 @@ fieldset_educitems{
 
 #graph-editor{
     display: flex;
+    min-width: 400px;
     flex-grow: 2;
     flex-flow: column wrap;
     justify-content: space-around;

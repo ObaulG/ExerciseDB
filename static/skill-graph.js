@@ -1,5 +1,5 @@
 import * as db_methods from './exercisedb_methods.js';
-import * as notifCreator from "./notification_creator";
+import * as notifCreator from "./notification_creator.js";
 
 
 export const NodeType = {

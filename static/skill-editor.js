@@ -95,13 +95,13 @@ function commit_changes_of_object_edited(){
         object_edited.node_type = node_type.value;
         object_edited.descr = node_descr.value;
 
-        db_methods.updateNode(object_edited);
+        db_methods.update_node(object_edited);
     }
     else if ("label" in object_edited){
         console.log("edge edited. Pushing changes to graph");
-        db_methods.updateEdge(object_edited);
+        db_methods.update_edge(object_edited);
     }
-    graph.manualDraw();
+    //graph.manualDraw();
 }
 
 /**
@@ -427,4 +427,11 @@ window.onload = function(){
         graph.clear();
 
     };
-}
+};
+
+/**
+ * When leaving the tab, we should ensure the last edited graph remains saved
+ */
+window.addEventListener('beforeunload', function (e) {
+    graph.saveToLocalStorage();
+});

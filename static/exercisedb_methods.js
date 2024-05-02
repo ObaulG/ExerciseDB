@@ -57,6 +57,10 @@ export async function add_node(node){
     return await db_call(ROUTES.addNode, "POST", node);
 }
 
+export async function update_node(node){
+    return await db_call(ROUTES.addEdge, "POST", node);
+}
+
 export async function delete_node(node){
     return await db_call(ROUTES.deleteNode, "DELETE", node);
 }

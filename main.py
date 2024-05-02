@@ -261,39 +261,53 @@ async def create_node(data: schemas.EducItemDataCreate,
     user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
     new_node = db.create_educ_item_from_submit(data, user)
 
-
+"""
+Called when a Node is updated. If the Node was created in the App, it should not
+have any id.
+:param db:
+:return:
+"""
 @app.post("/educitem/node")
-def update_node(db: Neo4jManager = Depends(get_neo4j_db)):
-    """
-    Called when a Node is updated. If the Node was created in the App, it should not
-    have any id
-    :param db:
-    :return:
-    """
-    educ_items = db.get_educ_items()
-    return educ_items
+async def update_node(data: schemas.Node,
+                      db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
+                      request: Request):
+    user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
+    node = db.update_node(data.node_id, data.properties)
 
 
-# @app.post("/edge", response_model=schemas.Relationship)
-# def add_edge_in_skill_graph(edge: schemas.Edge,
-#                             current_user: Annotated[User, Depends(get_current_user_neo4j)],
-#                             db: Neo4jManager = Depends(get_neo4j_db)):
-#     pass
-# 
-# @app.post("/edge/{edge_id}", response_model=schemas.Relationship)
-# def delete_edge_in_skill_graph(edge_id: str,
-#                                current_user: Annotated[User, Depends(get_current_user_neo4j)],
-#                                db: Neo4jManager = Depends(get_neo4j_db)):
-#     pass
+@app.delete("/educitem/node/{node_id}")
+async def remove_node(node_id: str,
+                      db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
+                      request: Request):
+    user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
+    node_removed = db.delete_node(node_id)
 
-# @app.post("/educitem", response_model=schemas.Node)
-# def submit_educ_item(educitem: EducItemDataSubmit,
-#                      current_user: Annotated[User, Depends(get_current_user_neo4j)],
-#                      db: Any = Depends(get_neo4j_db)):
-#     new_educ_item = db.create_educ_item_from_submit(educ_item=educitem)
-#
-#     return new_educ_item
-#
+@app.put("/educitem/node", response_model=schemas.Node)
+async def create_node(data: schemas.EducItemDataCreate,
+                      db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
+                      request: Request):
+    user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
+    new_node = db.create_educ_item_from_submit(data, user)
+    return new_node
+
+
+@app.post("/educitem/edge")
+async def update_edge(data: schemas.Relationship,
+                      db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
+                      request: Request):
+    user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
+    new_edge = db.up(data.source_node_id,
+                                               data.target_node_id,
+                                               data.relationship_id,
+                                               user,
+                                               data.properties)
+
+@app.delete("/educitem/node/{node_id}")
+async def remove_node(node_id: str,
+                      db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
+                      request: Request):
+    user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
+    node_removed = db.delete_node(node_id)
 #
 # @app.get("/exercise/all", response_model=schemas.Exercises)
 # def get_exercises(db: Neo4jManager = Depends(get_neo4j_db)):
