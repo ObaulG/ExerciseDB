@@ -1,3 +1,4 @@
+import neo4j.exceptions
 from neo4j import GraphDatabase, Result, Record
 from neo4j.graph import Node
 from . import models, schemas
@@ -451,8 +452,13 @@ class Neo4jManager:
         RETURN user
         """
         with self._driver.session() as session:
-            result = session.run(query=cypher,
-                                 parameters={'pseudo': pseudo})
+            try:
+                result = session.run(query=cypher,
+                                     parameters={'pseudo': pseudo})
+            # TODO: Why is it returning an Exception when the auth fails
+            except neo4j.exceptions.AuthError as e:
+                print(e)
+                return None
             result_data = result.data()
             if not result_data:
                 return None
@@ -637,7 +643,7 @@ class Neo4jManager:
                      RETURN size(nodes), size(rels), nodes, rels
         """
 
-        # Here: x is a Node and r are the list of Relationship that leads from
+        # Here: x is a Node and r is the list of Relationship that leads from
         # the first node to x.
         """
         cypher = MATCH p = (:EducFramework {id:$id})-[r*0..]->(x)
@@ -650,6 +656,7 @@ class Neo4jManager:
                  RETURN collect(DISTINCT x) as nodes,
                        [r in collect(distinct last(r)) | [ID(startNode(r)), ID(endNode(r)), properties(r) ]] as rels
         """
+        # TODO: the EducFramework node is not retrieved...
         cypher = """MATCH path = (:EducFramework {id:$id})-[r*0..]->(x)
                     WHERE ALL(rel IN relationships(path) WHERE type(rel) IN ["comprises"])
                     RETURN collect(DISTINCT x) as nodes,
@@ -658,7 +665,7 @@ class Neo4jManager:
                                                             id=str(id),
                                                             relationship_types=relationships_in_skillgraph,
                                                             database_=self.database)
-        print(records)
+        print(f"{len(records)} records for id {id}: {records}")
         print("The query `{query}` returned {records_count} records in {time} ms.".format(query=summary.query,
                                                                                           records_count=len(records),
                                                                                           time=summary.result_available_after))

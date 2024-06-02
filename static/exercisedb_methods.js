@@ -54,7 +54,7 @@ export async function db_call(route, method, data){
 }
 
 export async function add_node(node){
-    return await db_call(ROUTES.addNode, "POST", node);
+    return await db_call(ROUTES.addNode, "PUT", node);
 }
 
 export async function update_node(node){

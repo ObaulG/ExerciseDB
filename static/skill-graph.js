@@ -1,6 +1,6 @@
 import * as db_methods from './exercisedb_methods.js';
 import * as notifCreator from "./notification_creator.js";
-
+import * as Node from "./Node.js";
 
 export const NodeType = {
 	Framework: "educframework",
@@ -152,7 +152,7 @@ export default class Graph {
   /* Deletes selected node and adjacent edges */
   async deleteNode(node) {
     // We can't delete the framework node.
-    if (node.type === NodeType.Framework){return;}
+    if (node.hasLabel(Node.NodeType.Framework)){return;}
     var edges_to_remove = this.edges.filter((e) => e.source === node || e.target === node);
 
     this.nodes = this.nodes.filter((n) => node !== n);
@@ -178,22 +178,39 @@ export default class Graph {
     this.redraw();
   }
 
-  async addNode(title, x, y) {
-    var node = {
-      id: ++this.nodeId,
-      local_id: this.nodeId,
+  /**
+   * Creates a Node on the client. The ID is auto-incremented. Calls the API for creation.
+   * @param title
+   * @param x
+   * @param y
+   * @returns {Promise<void>}
+   */
+  async createNode(title, x, y){
+    var node = new Node({
+      node_id: (++this.nodeId).toString(),
+      local_id: this.nodeId.toString(),
+      labels: [NodeType.Competency],
       title: title,
       x: x,
       y: y,
-      node_type: NodeType.Competency,
       description: "",
-    }
+    });
+    // the constructor will build a similar Dict to the one used with the API.
     this.nodes.push(node);
     this.redrawNodes();
 
     var resp = await db_methods.add_node(node)
   }
 
+  /**
+   * Adds an already created Node to the graph.
+   * @param title
+   * @param x
+   * @param y
+   * @param type
+   * @param descr
+   * @returns {Promise<void>}
+   */
   async addSkillNode(title, x, y, type, descr){
     var node = {
       id: ++this.nodeId,
@@ -291,13 +308,14 @@ export default class Graph {
 
           if (event.shiftKey) {
               console.log("event.shiftKey! adding a Node");
-              this.addNode((this.nodeId + 1).toString(), pos[0], pos[1]);
+              this.createNode((this.nodeId + 1).toString(), pos[0], pos[1]);
           }
+          /**
           if (this._current_pressed in keyToNodeType){
               console.log("mouseDown with key pressed!");
               let nodetype = keyToNodeType[this._current_pressed];
               this.addSkillNode((this.nodeId + 1).toString(), pos[0], pos[1], nodetype, "");
-          }
+          }*/
       })
       // click outside of elements
       .on("click", () => {
@@ -322,12 +340,12 @@ export default class Graph {
           const pos = d3.pointer(event, graph.plot.node());
           graph.dragLine.attr(
             "d",
-            "M" + d.x + "," + d.y + "L" + pos[0] + "," + pos[1]
+            "M" + d.x + "," + d.x + "L" + pos[0] + "," + pos[1]
           );
         } else {
           // update position of dragged node and update adjacent edges
-          d.x = event.x;
-          d.y = event.y;
+          d.setX(event.x);
+          d.setY(event.y);
           d3.select(this)
             .raise()
             .attr("transform", (d) => "translate(" + [d.x, d.y] + ")");
@@ -465,7 +483,7 @@ export default class Graph {
                .duration(50)
                .attr('opacity', '.85');
 
-        div_tooltip.html(d.title)
+        div_tooltip.html(d.getTitle())
                .style("left", (event.pageX + 10) + "px")
                .style("top", (event.pageY - 15) + "px")
                .transition()
@@ -503,7 +521,7 @@ export default class Graph {
 
     nodes.append("circle").attr("r", String(this.consts.NODE_RADIUS))
                           .attr("stroke", "black")
-    nodes.append("text").text((d) => d.title);
+    nodes.append("text").text((d) => d.getTitle());
   }
 
 
@@ -528,7 +546,7 @@ export default class Graph {
       .attr("contentEditable", "true")
       .style("text-align", "center")
       //.style("border", "1px solid")
-      .text(d.title)
+      .text(d.getTitle())
       .on("mousedown", (event, d) => {
         event.stopPropagation();
       })
@@ -540,7 +558,7 @@ export default class Graph {
       })
       // when losing focus on the textbox
       .on("blur", (event, d) => {
-        d.title = event.target.textContent;
+        d.setTitle(event.target.textContent);
         d3.select(event.target.parentElement).remove();
         this.redrawNodes();
         text.classed("hidden", false);
@@ -553,7 +571,7 @@ export default class Graph {
       .attr("transform", (d) => "translate(" + d.x + "," + d.y + ")")
       .classed("selected", (d) => d === this.state.selectedNode);
 
-    update.select("text").text((d) => d.title);
+    update.select("text").text((d) => d.getTitle());
   }
 
   // See https://www.d3indepth.com/selections/ for more info...
@@ -679,6 +697,23 @@ export default class Graph {
     return String(d.source.local_id) + "+" + String(d.target.local_id);
   }
 
+
+  getNodeProperties(node){
+
+  }
+
+
+
+  /**
+   * Convert a Node stored in the client into an Object accepted by the Python app : schemas.Node.
+   * @param node
+   */
+  convertNodeForDBCall(node){
+    let nodeSuitedForDBCall = {
+      "node_id": "",
+      "labels": [node.label],
+    }
+  }
   /**
     Load a Graph from local nodes and edges.
    */
@@ -705,13 +740,26 @@ export default class Graph {
     var db_id_to_local_id = {};
     for(let i = 0; i<nodes.length; i++){
         nodes[i].local_id = i;
-        db_id_to_local_id[nodes[i].id] = i;
+        db_id_to_local_id[nodes[i].node_id] = i;
     }
-    console.log("db_id_to_local_id: ");
-    console.log(db_id_to_local_id);
+    //console.log("db_id_to_local_id: ");
+    //console.log(db_id_to_local_id);
 
-    this.nodes = nodes;
+    // nodes must be converted to Node objects
+    for (let node in this.nodes) {
+      if (this.nodes.hasOwnProperty(node)) {
+          delete this.nodes[node];
+      }
+    }
+    console.log(typeof nodes);
     console.log(nodes);
+    for (let node in Object.values(nodes)) {
+      console.log(node); //undefined???
+      let new_node = new Node.Node(node);
+      this.nodes.push(new_node);
+    }
+
+
     console.log(this.nodes);
 
     edges.forEach((edge) => {

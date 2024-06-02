@@ -52,14 +52,14 @@ function displayNodeData(node){
         node_type.value = "";
         node_descr.value = "";
     } else {
-        node_id.value = node.id;
-        node_title.value = node.title;
-        node_type.value = node.node_type;
-        node_descr.value = node.descr;
+        node_id.value = node.node_id;
+        node_title.value = node.getTitle();
+        node_type.value = node.getFirstLabel();
+        node_descr.value = node.getDescription();
     }
 
     // We should not be able to edit the Framework node label
-    node_title.disable = (node.node_type === NodeType.Framework);
+    node_title.disable = (node.hasLabel(Node.NodeType.Framework));
 
 }
 
@@ -85,15 +85,15 @@ function commit_changes_of_object_edited(){
     if (!object_edited){return;}
     if ("node_type" in object_edited){
         console.log("node edited. Pushing changes to graph");
-        let node_id = document.getElementById("nodeid");
+        //let node_id = document.getElementById("nodeid");
         let node_title = document.getElementById("nodetitle");
         let node_type = document.getElementById("nodetype");
         let node_descr = document.getElementById("nodedescr");
 
-        object_edited.id = node_id.value;
-        object_edited.title = node_title.value;
-        object_edited.node_type = node_type.value;
-        object_edited.descr = node_descr.value;
+        //object_edited.id = node_id.value;
+        object_edited.setTitle(node_title.value);
+        object_edited.setFirstLabel(node_type.value);
+        object_edited.setDescription(node_descr.value);
 
         db_methods.update_node(object_edited);
     }
@@ -124,7 +124,7 @@ function update_graph_list_table(){
     for (let i = 0; i < graphIds.length; i++) {
       const graphId = graphIds[i];
       const graph = existing_graphs[graphId];
-      //console.log(graph);
+      console.log(graph);
       const row = graph_table.insertRow(i);
 
       // Populate cells
@@ -187,10 +187,9 @@ async function load_skill_graph_data_from_db(graph_id){
 
         // note: data["nodes"] is Object and not Array !
         let nodes = data["nodes"]["nodes"];
-        let relationships = data["edges"]["edges"];
-        // TODO: the DB can store the app location (x,y) of each node, for each user.
-        let json_converted = convert_neo4j_graph(nodes, relationships);
-        graph.load_from_json(graph_id, json_converted.nodes, json_converted.edges);
+        let edges = data["edges"]["edges"];
+        //let json_converted = convert_neo4j_graph(nodes, relationships);
+        graph.load_from_json(graph_id, nodes, edges);
         notifCreator.generate_and_call_success_notif("Graph loaded!", "");
         // the 1st node should always be the EducFramework Node
         document.querySelector("#skillgraphname").innerHTML = nodes[0].properties.title;
@@ -221,24 +220,14 @@ async function get_all_skillgraphs_from_db(){
     const data = await resp.json();
 
 
-        /**
-            class NodeBase(BaseModel):
-                node_id: int
-                labels: list
-            class Node(NodeBase):
-                properties: Optional[dict] = None
-
-            class Nodes(BaseModel):
-                nodes: List[Node]
-        **/
     if (resp.ok){
-        var nodes = data["nodes"];
-
+        console.log(data);
+        let nodes = data["nodes"];
 
         // We update the dict with the data received
         for (const [node_id, node] of Object.entries(nodes)) {
-            //console.log(node);
-            existing_graphs[node.node_id] = node.properties;
+            console.log(node);
+            existing_graphs[node_id] = node.properties;
         }
         update_graph_list_table();
         notifCreator.generate_and_call_success_notif("Skillgraphs downloaded", nodes.length + " nodes received.");
@@ -251,6 +240,7 @@ async function get_all_skillgraphs_from_db(){
 /**
  * Convert the nodes and edges received from the Neo4j database to
  * a version used by the Skill Editor.
+ * Not useful anymore ?
  * @param nodes
  * @param edges
  * @returns {{nodes: *[], edges: *[]}}
@@ -263,8 +253,7 @@ function convert_neo4j_graph(nodes, edges){
     console.log(nodes);
     console.log(edges);
 
-    // TODO : add the node_type label. It should be one among "Competency", "Skill" and "Knowledge",
-    //        stored as labels in the Neo4j database
+
     Object.values(nodes).forEach((node) => {
         console.log(node);
         const node_type = node.labels.find((l) => l.toLowerCase() in NodeType);
@@ -381,8 +370,9 @@ window.onload = function(){
         let clicked_button = e.target;
         console.log("Click detected from : " + e.target + " nodeName: " + clicked_button.nodeName);
         if(clicked_button && clicked_button.nodeName === "BUTTON") {
-            // List item found!
-            editGraph(clicked_button.id);
+            // Buttons ID are self incremented from 1 but we want the graph_id
+            let corresponding_graph_id = existing_graphs[clicked_button.id]["id"]
+            editGraph(corresponding_graph_id);
         }
      };
 

@@ -297,10 +297,10 @@ async def update_edge(data: schemas.Relationship,
                       request: Request):
     user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
     new_edge = db.up(data.source_node_id,
-                                               data.target_node_id,
-                                               data.relationship_id,
-                                               user,
-                                               data.properties)
+                                       data.target_node_id,
+                                       data.relationship_id,
+                                       user,
+                                       data.properties)
 
 @app.delete("/educitem/node/{node_id}")
 async def remove_node(node_id: str,
