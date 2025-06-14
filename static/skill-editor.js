@@ -23,8 +23,6 @@ var object_edited = null;
 var graph;
 var existing_graphs = {};
 const graph_test_id = 1;
-
-
 function handleErrors(response) {
     if (!response.ok) {
         throw Error(response.statusText);
@@ -114,7 +112,8 @@ async function editGraph(graph_id){
     update_graph_ui_elements()
 }
 /**
-    Graph data is stored in existing_graphs as a Node ({node_id:"...", labels:[...], "properties":{...}}
+    Graph data is stored in existing_graphs as a
+    Node ({node_id:"...", labels:[...], "properties":{...}}
 **/
 function update_graph_list_table(){
     console.log("Updating graph table");
@@ -176,6 +175,7 @@ async function load_skill_graph_data_from_db(graph_id){
     const data = await resp.json();
 
     if (resp.ok) {
+        console.log("Graph received !")
         console.log(data);
         //class GraphNodesEdges(BaseModel):
         //    nodes_count: Optional[int]
@@ -191,7 +191,7 @@ async function load_skill_graph_data_from_db(graph_id){
         //let json_converted = convert_neo4j_graph(nodes, relationships);
         graph.load_from_json(graph_id, nodes, edges);
         notifCreator.generate_and_call_success_notif("Graph loaded!", "");
-        // the 1st node should always be the EducFramework Node
+        // the 1st node given by the DB should always be the EducFramework Node
         document.querySelector("#skillgraphname").innerHTML = nodes[0].properties.title;
     }
     else {

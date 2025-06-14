@@ -11,16 +11,19 @@ from uuid import uuid4
 # Some parts of code are retrieved from this GitHub repo : https://github.com/dudikbender/fast-graph/tree/main
 
 # List of acceptable node labels and relationship types
-node_labels = ['User', 'Admin', 'Developper', 'EducFramework', 'EducItem', 'Competency', 'Knowledge', "Skill",
+node_labels = ['User', 'Admin', 'Developper', 'EducFramework',
+               'EducItem', 'Competency', 'Knowledge', "Skill",
                'Exercise', "Course", "Resource"]
 
 educ_item_valid_labels = {'Competency', 'Knowledge', "Skill"}
 
-relationship_types = ['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency",
-                      "requires",
-                      "isComplexificationOf", "isLeverOfUnderstandingOf", "masters", "needs"]
+relationship_types = ['comprises', 'hasTraining', 'hasLearning',
+                      'hasSkill', "hasKnowledge", "hasCompetency",
+                      "requires", "isComplexificationOf",
+                      "isLeverOfUnderstandingOf", "masters", "needs"]
 
-relationships_in_skillgraph = ['comprises', 'hasTraining', 'hasLearning', 'hasSkill', "hasKnowledge", "hasCompetency",
+relationships_in_skillgraph = ['comprises', 'hasTraining', 'hasLearning',
+                               'hasSkill', "hasKnowledge", "hasCompetency",
                                "requires",
                                "isComplexificationOf", "isLeverOfUnderstandingOf"]
 
@@ -30,11 +33,14 @@ base_properties = ['created_by', 'created_time', 'id']
 
 class Neo4jManager:
     """
-    In this Neo4j database, all nodes have an id custom property, as said in the documentation.
+    In this Neo4j database, all nodes have an id custom property,
+    as said in the documentation.
     """
-
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=False)
+        self._driver = GraphDatabase.driver(uri,
+                                            auth=(user, password),
+                                            database="skills",
+                                            encrypted=False)
         self.database = "neo4j"
 
     def close(self):
@@ -67,6 +73,7 @@ class Neo4jManager:
         node_list = []
         rel_list = []
         for record in records:
+            print("record:", record)
             nodes = record.get("nodes")
             rels = record.get("rels")
             print(nodes)
@@ -631,6 +638,7 @@ class Neo4jManager:
         with any path length (r*0..). In order to get only the wanted Nodes, we should not follow any Relation
         which is not part of the meta-pedagogical model (comprises, isLevelOfUnderstanding, etc.), so we should
         remove any link with a User (masters), or with an EducItem from any other EducFramework
+        TODO: will make 2 requests, one for the EducFramework, the other for the corresponding graph
         :param id: The EducFramework id from which the traversal should start
         :return:
         """
@@ -656,29 +664,34 @@ class Neo4jManager:
                  RETURN collect(DISTINCT x) as nodes,
                        [r in collect(distinct last(r)) | [ID(startNode(r)), ID(endNode(r)), properties(r) ]] as rels
         """
-        # TODO: the EducFramework node is not retrieved...
-        cypher = """MATCH path = (:EducFramework {id:$id})-[r*0..]->(x)
+        """
+        # the EducFramework node is not retrieved...
+        cypher = MATCH path = (origin:EducFramework {id:$id})-[r*0..]->(x)
                     WHERE ALL(rel IN relationships(path) WHERE type(rel) IN ["comprises"])
                     RETURN collect(DISTINCT x) as nodes,
-                       [r in collect(distinct last(r)) | [startNode(r).id, endNode(r).id, type(r), properties(r) ]] as rels"""
+                       [r in collect(distinct last(r)) | [startNode(r).id, endNode(r).id, type(r), properties(r) ]] as rels
+        """
+
+        """cypher = MATCH path = (origin:EducFramework {id:$id})-[r*0..]->(x)
+        WHERE ALL(rel IN relationships(path) WHERE type(rel) IN["comprises","hasSkill"])
+        RETURN collect(DISTINCT x) as nodes,
+        [r in collect(distinct last(r))] as rels"""
+
+        # it works on Neo4j desktop, but it does not return anything ?
+        cypher = """MATCH path = (origin:EducFramework {id:$id})-[rel:comprises|hasSkill*0..]->(retVal) 
+        WHERE NOT EXISTS((retVal)-[:comprises|hasSkill]->())
+        RETURN nodes(path) as nodes, relationships(path) as rels      
+        """
         records, summary, keys = self._driver.execute_query(cypher,
-                                                            id=str(id),
-                                                            relationship_types=relationships_in_skillgraph,
-                                                            database_=self.database)
+                                                            {'id': str(id)},
+                                                            database=self.database)
         print(f"{len(records)} records for id {id}: {records}")
         print("The query `{query}` returned {records_count} records in {time} ms.".format(query=summary.query,
                                                                                           records_count=len(records),
                                                                                           time=summary.result_available_after))
+        graph_result = self.generate_GraphNodeEdges_from_records(records)
 
-        if len(records) == 0:
-            return schemas.GraphNodesEdges(nodes=schemas.Nodes(nodes=[]),
-                                           edges=schemas.Edges(edges=[]),
-                                           nodes_count=0,
-                                           edges_count=0)
-
-        # Note : It seems there is exactly 1 record...
-
-        return self.generate_GraphNodeEdges_from_records(records)
+        return graph_result
 
     def create_educ_framework(self, title: str, description: str, user: schemas.Node):
         return self.create_node(label="EducFramework",

@@ -123,7 +123,7 @@ export default class Graph {
   }
 
   /**
-    emits signals when clicking on a Node or an edge,
+    emits signals when clicking on a Node or an Edge,
     and also on nothing. Used by other components
     to display more data on these objects.
   **/

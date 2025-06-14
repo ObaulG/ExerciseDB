@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Compétences</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .competence-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .competence {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            width: 30%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .competence h2 {
+            margin-top: 0;
+        }
+        .editable {
+            margin-bottom: 10px;
+        }
+        .editable input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .links {
+            margin-top: 10px;
+        }
+        .links select, .links input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #cc0000;
+        }
+        .add-link {
+            background-color: #4CAF50;
+        }
+        .add-link:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="competence-container">
+        <div class="competence">
+            <h2>Compétence 1</h2>
+            <div class="editable">
+                <label for="competence1-name">Nom:</label>
+                <input type="text" id="competence1-name" value="Nom de la Compétence 1">
+            </div>
+            <div class="links">
+                <label for="competence1-links">Liens:</label>
+                <select id="competence1-links">
+                    <option value="">--Choisir une compétence--</option>
+                    <option value="competence2">Compétence 2</option>
+                    <option value="competence3">Compétence 3</option>
+                </select>
+                <button class="add-link" onclick="addLink('competence1')">Ajouter un lien</button>
+                <div id="competence1-linked">
+                    <!-- Les liens existants seront affichés ici -->
+                </div>
+            </div>
+            <button onclick="deleteCompetence('competence1')">Supprimer</button>
+        </div>
+
+        <div class="competence">
+            <h2>Compétence 2</h2>
+            <div class="editable">
+                <label for="competence2-name">Nom:</label>
+                <input type="text" id="competence2-name" value="Nom de la Compétence 2">
+            </div>
+            <div class="links">
+                <label for="competence2-links">Liens:</label>
+                <select id="competence2-links">
+                    <option value="">--Choisir une compétence--</option>
+                    <option value="competence1">Compétence 1</option>
+                    <option value="competence3">Compétence 3</option>
+                </select>
+                <button class="add-link" onclick="addLink('competence2')">Ajouter un lien</button>
+                <div id="competence2-linked">
+                    <!-- Les liens existants seront affichés ici -->
+                </div>
+            </div>
+            <button onclick="deleteCompetence('competence2')">Supprimer</button>
+        </div>
+
+        <div class="competence">
+            <h2>Compétence 3</h2>
+            <div class="editable">
+                <label for="competence3-name">Nom:</label>
+                <input type="text" id="competence3-name" value="Nom de la Compétence 3">
+            </div>
+            <div class="links">
+                <label for="competence3-links">Liens:</label>
+                <select id="competence3-links">
+                    <option value="">--Choisir une compétence--</option>
+                    <option value="competence1">Compétence 1</option>
+                    <option value="competence2">Compétence 2</option>
+                </select>
+                <button class="add-link" onclick="addLink('competence3')">Ajouter un lien</button>
+                <div id="competence3-linked">
+                    <!-- Les liens existants seront affichés ici -->
+                </div>
+            </div>
+            <button onclick="deleteCompetence('competence3')">Supprimer</button>
+        </div>
+    </div>
+
+    <script>
+        function addLink(competenceId) {
+            const selectElement = document.getElementById(`${competenceId}-links`);
+            const selectedCompetence = selectElement.value;
+            if (selectedCompetence) {
+                const linkedDiv = document.getElementById(`${competenceId}-linked`);
+                const newLink = document.createElement('div');
+                newLink.textContent = selectedCompetence;
+                linkedDiv.appendChild(newLink);
+            }
+        }
+
+        function deleteCompetence(competenceId) {
+            if (confirm('Voulez-vous vraiment supprimer cette compétence ?')) {
+                const competenceElement = document.querySelector(`.competence h2`).textContent.includes(competenceId) ? document.querySelector(`.competence h2`).parentElement : null;
+                if (competenceElement) {
+                    competenceElement.remove();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -44,7 +44,6 @@ class UserNeo4j(BaseModel):
     joined: Optional[datetime] = None
     disabled: Optional[bool] = None
 
-
 class Token(BaseModel):
     access_token: str
     token_type: str

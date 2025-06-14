@@ -4,7 +4,6 @@ import uvicorn
 from datetime import datetime, timedelta
 import logging
 from fastapi import Response, Request, Depends, FastAPI, HTTPException
-from sqlalchemy.orm import Session
 
 from database import crud, models, schemas
 from database.database import SessionLocal, engine
@@ -25,6 +24,8 @@ from database.schemas import User, Token, TokenData
 import database.crud as crud
 
 from database.crud_neo4j import Neo4jManager
+
+from neo4j import __version__
 
 protected_files = [
     "/exercise_submit.js",
@@ -51,10 +52,11 @@ app.add_middleware(
 
 # Neo4j configuration
 NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "admin-python-app"
+NEO4J_USER = "pythonApp"
 #NEO4J_PASSWORD = "ACxJZm6EUr3ykwgIApuwVHj3plkekfJNIx_2jR27GAY"
-#NEO4J_PASSWORD = "48bfcdez32"
-NEO4J_PASSWORD = "azertyuiop123"
+NEO4J_PASSWORD = "48bfcdez32x1"
+
+# obaul 123456
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 
@@ -308,6 +310,22 @@ async def remove_node(node_id: str,
                       request: Request):
     user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
     node_removed = db.delete_node(node_id)
+
+@app.get("/reset/db")
+async def reset_database(db: Annotated[Neo4jManager, Depends(get_neo4j_db)],
+                      request: Request):
+    """
+    Reset the content of the database. Should only be done by the administrator
+    OR when the database is empty. In this case, it will reload some base data
+    :param db:
+    :param request:
+    :return:
+    """
+    user = await get_current_user_neo4j(request.cookies.get("access_token"), db)
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
 #
 # @app.get("/exercise/all", response_model=schemas.Exercises)
 # def get_exercises(db: Neo4jManager = Depends(get_neo4j_db)):
@@ -349,4 +367,5 @@ app.mount("/",
 
 # uvicorn main:app
 if __name__ == '__main__':
+    print("Neo4j version:", __version__)
     uvicorn.run("main:app")

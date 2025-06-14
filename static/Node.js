@@ -7,7 +7,6 @@ export const NodeType = {
 }
 
 export class Node {
-
     constructor(opts) {
         this.node_id = opts.node_id;
 		this.local_id = opts.local_id;
