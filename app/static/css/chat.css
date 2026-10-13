@@ -94,3 +94,20 @@
     font-size: 12px;
     outline: none;
 }
+
+/* === Évaluations === */
+.eval-badge {
+    font-weight: bold;
+    padding: 1px 6px;
+    border: 1px solid #000;
+    margin-right: 6px;
+}
+
+.eval-ok { background: #c8f7c8; }
+.eval-ko { background: #f7c8c8; }
+
+.eval-score {
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 6px;
+}

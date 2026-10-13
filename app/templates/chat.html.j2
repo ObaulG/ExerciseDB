@@ -15,7 +15,7 @@
                 <button aria-label="Maximize"></button>
                 <button aria-label="Close"></button>
             </div>
-            <h1 class="title-bar-text">💬 Assistant Maths — Session de chat</h1>
+            <h1 class="title-bar-text">💬 Assistant Maths — Évaluateur de réponses</h1>
         </div>
 
         <div class="window-body">
@@ -23,37 +23,22 @@
                 <div class="message bot">
                     <div class="avatar">🤖</div>
                     <div class="bubble">
-                        <div class="msg-header">Assistant · <span class="msg-time">14:02</span></div>
-                        <p>Bonjour 👋 Je suis votre assistant de mathématiques. Posez-moi vos questions&nbsp;!</p>
-                    </div>
-                </div>
-
-                <div class="message user">
-                    <div class="avatar">🧑‍🎓</div>
-                    <div class="bubble">
-                        <div class="msg-header">Moi · <span class="msg-time">14:03</span></div>
-                        <p>Bonjour, comment résoudre x + 3 = 7 ?</p>
-                    </div>
-                </div>
-
-                <div class="message bot">
-                    <div class="avatar">🤖</div>
-                    <div class="bubble">
-                        <div class="msg-header">Assistant · <span class="msg-time">14:03</span></div>
-                        <p>Pour résoudre x + 3 = 7, on isole x en soustrayant 3 aux deux membres&nbsp;: x = 7 − 3, donc <strong>x = 4</strong>.</p>
+                        <div class="msg-header">Assistant · <span class="msg-time">--:--</span></div>
+                        <p>Bonjour 👋 Donnez-moi un <strong>problème de maths</strong> et votre <strong>réponse</strong> : je les évaluerai et vous donnerai un feedback détaillé.</p>
                     </div>
                 </div>
             </div>
 
             <form class="chat-input" id="chat-form" autocomplete="off">
-                <input type="text" id="chat-input" placeholder="Tapez votre message ici..." aria-label="Message">
+                <input type="text" id="problem-input" placeholder="Énoncé du problème..." aria-label="Problème">
+                <input type="text" id="answer-input" placeholder="Votre réponse..." aria-label="Réponse">
                 <button type="submit" class="send-btn">Envoyer ➤</button>
             </form>
         </div>
 
         <div class="status-bar">
             <span class="status-field">Prêt</span>
-            <span class="status-field">2 messages</span>
+            <span class="status-field" id="msg-count">0 évaluation(s)</span>
             <span class="status-field">CSS rétro v1.0</span>
         </div>
     </div>
