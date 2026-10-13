@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Maths — Import d'exercices</title>
+    <link rel="stylesheet" href="/static/css/retro.css">
+    <link rel="stylesheet" href="/static/css/exercises.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script defer src="/static/js/exercises.js"></script>
+</head>
+<body>
+    <nav class="retro-nav">
+        <a href="/" class="retro-btn">💬 Chat</a>
+        <a href="/exercises" class="retro-btn">📚 Exercices</a>
+    </nav>
+
+    <div class="window" id="import-window">
+        <div class="title-bar">
+            <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+            </div>
+            <h1 class="title-bar-text">📚 Import d'exercices</h1>
+        </div>
+
+        <div class="window-body">
+            <form id="exercise-form">
+                <label for="name">Nom de l'exercice</label>
+                <input type="text" id="name" name="name" maxlength="200" required
+                       placeholder="Ex. : Théorème de Pythagore — application">
+
+                <label for="text">Énoncé (LaTeX avec $...$ ou $$...$$)</label>
+                <textarea id="text" name="text" rows="4" required
+                          placeholder="Ex. : Soit un triangle rectangle... calculer $c$ tel que $c^2 = a^2 + b^2$."></textarea>
+
+                <div id="corrections-container">
+                    <label>Corrigés (au moins un recommandé)</label>
+                    <textarea class="correction" rows="2"
+                              placeholder="Ex. : D'après Pythagore, $c = \sqrt{a^2 + b^2}$..."></textarea>
+                </div>
+                <button type="button" class="retro-btn" id="add-correction">+ Ajouter un corrigé</button>
+
+                <button type="submit" class="retro-btn primary">💾 Enregistrer l'exercice</button>
+                <span id="form-status"></span>
+            </form>
+        </div>
+
+        <div class="status-bar">
+            <span class="status-field">Prêt</span>
+            <span class="status-field" id="exercise-count">0 exercice(s)</span>
+            <span class="status-field">KaTeX + LaTeX</span>
+        </div>
+    </div>
+
+    <div class="window" id="list-window">
+        <div class="title-bar">
+            <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+            </div>
+            <h1 class="title-bar-text">📋 Exercices enregistrés</h1>
+        </div>
+
+        <div class="window-body">
+            <div id="exercise-list"></div>
+        </div>
+    </div>
+</body>
+</html>
