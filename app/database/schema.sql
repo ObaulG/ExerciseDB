@@ -19,3 +19,16 @@ CREATE TABLE IF NOT EXISTS correction (
 );
 
 CREATE INDEX IF NOT EXISTS idx_correction_exercise ON correction(exercise_id);
+
+CREATE TABLE IF NOT EXISTS user (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    pseudo        TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    password_hash TEXT NOT NULL,
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS session (
+    token      TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

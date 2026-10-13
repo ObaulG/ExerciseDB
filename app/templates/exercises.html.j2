@@ -6,12 +6,18 @@
     <title>Assistant Maths — Import d'exercices</title>
     <link rel="stylesheet" href="/static/css/retro.css">
     <link rel="stylesheet" href="/static/css/exercises.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script defer src="/static/js/auth.js"></script>
     <script defer src="/static/js/exercises.js"></script>
 </head>
 <body>
+    <header class="site-header">
+        {% include "_header.html.j2" %}
+    </header>
+
     <nav class="retro-nav">
         <a href="/" class="retro-btn">💬 Chat</a>
         <a href="/exercises" class="retro-btn">📚 Exercices</a>

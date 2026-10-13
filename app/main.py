@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.auth_routes import router as auth_router
 from app.database import db
 from app.exercise_routes import router as exercise_router
 from app.routes import router as api_router
@@ -21,6 +22,7 @@ db.init_db()
 
 app.include_router(api_router)
 app.include_router(exercise_router)
+app.include_router(auth_router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -31,6 +33,11 @@ async def chat_page(request: Request):
 @app.get("/exercises", response_class=HTMLResponse)
 async def exercises_page(request: Request):
     return templates.TemplateResponse(request, "exercises.html.j2")
+
+
+@app.get("/profile", response_class=HTMLResponse)
+async def profile_page(request: Request):
+    return templates.TemplateResponse(request, "profile.html.j2")
 
 
 @app.get("/health")
