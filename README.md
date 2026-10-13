@@ -1,18 +1,36 @@
-# Intro
+# Assistant Maths — ExerciseDB (refonte)
 
-This is a personnal project I started in order to learn FastAPI, JS and Neo4j programming. The main goal is to propose a small website that allows :
+Site FastAPI d'assistance aux étudiants en mathématiques, avec un agent LLM
+(AtomicAgents + Mistral) capable d'évaluer les réponses à des problèmes de maths.
+Interface rétro années 2000 (fenêtres type Windows 98), templates Jinja2.
 
-1. To store and publish math and CS exercises in LaTeX format ;
-2. To propose a skill-graph builder, in a similar way as the COMPeR project did (https://comper.fr/);
-3. To link exercises to the related skills;
-4. To track skill mastery of users by solving exercises online;
-5. To propose exercises automatically with adaptive learning algorithms.
+## Lancer en local
 
-# How to install
+```bash
+pip install -r requirements.txt
+export MISTRAL_API_KEY="votre_cle_mistral"   # obligatoire pour l'évaluateur
+uvicorn app.main:app --reload
+```
 
-You would need Python 3.9+, FastAPI and Neo4j Desktop (since the DB is not deployed yet).
+Ouvrir http://127.0.0.1:8000/
 
-# How does it work
+## Configuration
 
-When launching the uvicorn server and the Neo4j application, you have to create an account first and then log in. When logged in,
-you can access to the skill builder.
+| Variable           | Rôle                                      | Défaut                |
+|--------------------|-------------------------------------------|-----------------------|
+| `MISTRAL_API_KEY`  | Clé API Mistral (lue côté serveur, jamais commitée) | —          |
+| `MISTRAL_MODEL`   | Modèle utilisé par l'agent                | `mistral-small-latest`|
+
+## API
+
+- `GET /` — page de chat (évaluateur de réponses)
+- `GET /health` — état du service
+- `POST /api/evaluate` — évalue une réponse : `{ "problem": "...", "student_answer": "..." }`
+  - Réponse : `{ is_correct, score (0-10), feedback, corrected_solution }`
+  - `503` si `MISTRAL_API_KEY` absente, `502` si erreur LLM
+
+## Tests
+
+```bash
+python -m pytest tests/ -q
+```
