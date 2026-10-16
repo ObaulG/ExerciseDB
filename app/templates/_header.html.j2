@@ -1,0 +1,13 @@
+<div class="auth-zone" id="auth-zone">
+    <form id="login-form" class="auth-form" style="display:none">
+        <input type="text" id="login-pseudo" placeholder="Pseudo" maxlength="30" required>
+        <input type="password" id="login-password" placeholder="Mot de passe" required>
+        <button type="submit" class="retro-btn">Se connecter</button>
+        <button type="button" class="retro-btn" id="register-btn">S'inscrire</button>
+        <span id="auth-error"></span>
+    </form>
+    <div id="user-zone" class="user-zone" style="display:none">
+        <a href="/profile" id="profile-link">👤 <span id="user-pseudo"></span></a>
+        <button type="button" class="retro-btn" id="logout-btn">Déconnexion</button>
+    </div>
+</div>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Maths — v1.0</title>
+    <link rel="stylesheet" href="/static/css/retro.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+</head>
+<body>
+    <header class="site-header">
+        {% include "_header.html.j2" %}
+    </header>
+
+    <nav class="retro-nav">
+        <a href="/" class="retro-btn">💬 Chat</a>
+        <a href="/exercises" class="retro-btn">📚 Exercices</a>
+    </nav>
+    <div class="window" id="chat-window">
+        <div class="title-bar">
+            <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+            </div>
+            <h1 class="title-bar-text">💬 Assistant Maths — Évaluateur de réponses</h1>
+        </div>
+
+        <div class="window-body">
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot">
+                    <div class="avatar">🤖</div>
+                    <div class="bubble">
+                        <div class="msg-header">Assistant · <span class="msg-time">--:--</span></div>
+                        <p>Bonjour 👋 Donnez-moi un <strong>problème de maths</strong> et votre <strong>réponse</strong> : je les évaluerai et vous donnerai un feedback détaillé.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form class="chat-input" id="chat-form" autocomplete="off">
+                <input type="text" id="problem-input" placeholder="Énoncé du problème..." aria-label="Problème">
+                <input type="text" id="answer-input" placeholder="Votre réponse..." aria-label="Réponse">
+                <button type="submit" class="send-btn">Envoyer ➤</button>
+            </form>
+        </div>
+
+        <div class="status-bar">
+            <span class="status-field">Prêt</span>
+            <span class="status-field" id="msg-count">0 évaluation(s)</span>
+            <span class="status-field">CSS rétro v1.0</span>
+        </div>
+    </div>
+
+    <script defer src="/static/js/auth.js"></script>
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>
