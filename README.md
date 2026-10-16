@@ -4,17 +4,10 @@ Site FastAPI d'assistance aux étudiants en mathématiques, avec un agent LLM
 (AtomicAgents + Mistral) capable d'évaluer les réponses à des problèmes de maths.
 Interface rétro années 2000 (fenêtres type Windows 98), templates Jinja2.
 
-## Base de données
+## Base de données — Supabase (PostgreSQL)
 
-Deux backends sont supportés :
-
-- **PostgreSQL (Supabase)** — utilisé si la variable `DATABASE_URL` est définie.
-  Le schéma (`app/database/schema_postgres.sql`) est appliqué automatiquement au
-  démarrage (`db.init_db()`), ou peut être exécuté manuellement dans le SQL
-  Editor de Supabase.
-- **SQLite** — repli local si `DATABASE_URL` est absente (fichier `exercises.db`).
-
-### Configuration Supabase
+La base de données est **exclusivement en ligne** : un projet Supabase
+PostgreSQL est requis, il n'y a **aucun repli SQLite**.
 
 1. Dans le tableau de bord Supabase, ouvrez
    **Project Settings → Database → Connection string → URI** et copiez l'URI
@@ -25,14 +18,19 @@ Deux backends sont supportés :
    export DATABASE_URL="postgresql://postgres.xxx:MotDePasse@aws-0-eu-west-3.pooler.supabase.com:6543/postgres"
    ```
 
-   Ne committez jamais cette chaîne : elle contient votre mot de passe. En
-   production, utilisez les variables d'environnement de votre hébergeur.
+Le schéma (`app/database/schema.sql`) est appliqué automatiquement au démarrage
+(`db.init_db()`). Il peut aussi être exécuté manuellement dans le SQL Editor
+de Supabase.
+
+Ne committez jamais cette chaîne : elle contient votre mot de passe. En
+production, utilisez les variables d'environnement de votre hébergeur.
 
 ## Lancer en local
 
 ```bash
 pip install -r requirements.txt
 export MISTRAL_API_KEY="votre_cle_mistral"   # obligatoire pour l'évaluateur
+export DATABASE_URL="..."                    # obligatoire (Supabase)
 uvicorn app.main:app --reload
 ```
 
@@ -44,7 +42,7 @@ Ouvrir http://127.0.0.1:8000/
 |--------------------|-----------------------------------------------------------|------------------------|
 | `MISTRAL_API_KEY`  | Clé API Mistral (lue côté serveur, jamais commitée)       | —                      |
 | `MISTRAL_MODEL`    | Modèle utilisé par l'agent                                | `mistral-small-latest` |
-| `DATABASE_URL`     | URI PostgreSQL (Supabase). Vide = SQLite local            | —                      |
+| `DATABASE_URL`     | URI PostgreSQL Supabase — **obligatoire**                 | —                      |
 
 ## API
 
@@ -61,6 +59,10 @@ Ouvrir http://127.0.0.1:8000/
 
 ## Tests
 
+Les tests exigent un PostgreSQL ; en local, le paquet `pgserver` en démarre un
+d'ephémère automatiquement (via `tests/conftest.py`).
+
 ```bash
+pip install pgserver
 python -m pytest tests/ -q
 ```

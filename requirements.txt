@@ -5,3 +5,4 @@ atomic-agents
 instructor
 mistralai<2
 psycopg[binary,pool]
+pgserver
