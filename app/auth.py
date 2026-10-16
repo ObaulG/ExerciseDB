@@ -1,8 +1,6 @@
 import hashlib
 import hmac
 import secrets
-import sqlite3
-from pathlib import Path
 
 from fastapi import Request
 
@@ -29,19 +27,19 @@ def verify_password(password: str, stored: str) -> bool:
 def create_user(pseudo: str, password: str) -> int:
     with db.get_connection() as conn:
         try:
-            cur = conn.execute(
-                "INSERT INTO user (pseudo, password_hash) VALUES (?, ?)",
+            row = conn.execute(
+                'INSERT INTO "user" (pseudo, password_hash) VALUES (%s, %s) RETURNING id',
                 (pseudo, hash_password(password)),
-            )
-        except sqlite3.IntegrityError:
+            ).fetchone()
+            return row["id"]
+        except db.UniqueViolation:
             raise ValueError("Ce pseudo est déjà pris.")
-        return cur.lastrowid
 
 
 def authenticate(pseudo: str, password: str) -> dict | None:
     with db.get_connection() as conn:
         row = conn.execute(
-            "SELECT id, pseudo, password_hash FROM user WHERE pseudo = ? COLLATE NOCASE",
+            'SELECT id, pseudo, password_hash FROM "user" WHERE LOWER(pseudo) = LOWER(%s)',
             (pseudo,),
         ).fetchone()
         if row is None or not verify_password(password, row["password_hash"]):
@@ -52,13 +50,16 @@ def authenticate(pseudo: str, password: str) -> dict | None:
 def create_session(user_id: int) -> str:
     token = secrets.token_urlsafe(32)
     with db.get_connection() as conn:
-        conn.execute("INSERT INTO session (token, user_id) VALUES (?, ?)", (token, user_id))
+        conn.execute(
+            "INSERT INTO session (token, user_id) VALUES (%s, %s)",
+            (token, user_id),
+        )
     return token
 
 
 def delete_session(token: str) -> None:
     with db.get_connection() as conn:
-        conn.execute("DELETE FROM session WHERE token = ?", (token,))
+        conn.execute("DELETE FROM session WHERE token = %s", (token,))
 
 
 def get_current_user(request: Request) -> dict | None:
@@ -67,7 +68,7 @@ def get_current_user(request: Request) -> dict | None:
         return None
     with db.get_connection() as conn:
         row = conn.execute(
-            "SELECT u.id, u.pseudo FROM user u JOIN session s ON s.user_id = u.id WHERE s.token = ?",
+            'SELECT u.id, u.pseudo FROM "user" u JOIN session s ON s.user_id = u.id WHERE s.token = %s',
             (token,),
         ).fetchone()
         return {"id": row["id"], "pseudo": row["pseudo"]} if row else None

@@ -3,4 +3,6 @@ uvicorn[standard]
 jinja2
 atomic-agents
 instructor
-mistralai
+mistralai<2
+psycopg[binary,pool]
+pgserver
