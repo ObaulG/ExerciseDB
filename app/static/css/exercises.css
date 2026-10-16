@@ -13,20 +13,65 @@
     font-size: 11px;
 }
 
-#exercise-form {
+/* === Zone d'extraction === */
+
+#extract-window,
+#cards-window,
+#list-window {
+    max-width: 900px;
+    margin-bottom: 20px;
+}
+
+.mode-tabs {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    gap: 4px;
+    margin-bottom: 8px;
 }
 
-#exercise-form label {
-    font-weight: bold;
+.mode-tab {
+    padding: 4px 12px;
     font-size: 11px;
-    margin-top: 4px;
 }
 
-#exercise-form input,
-#exercise-form textarea {
+.mode-tab.active {
+    font-weight: bold;
+    border-top-color: #404040;
+    border-left-color: #404040;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: none;
+}
+
+.extract-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.extract-tab {
+    padding: 4px 12px;
+    font-size: 11px;
+}
+
+.extract-tab.active {
+    font-weight: bold;
+    border-top-color: #404040;
+    border-left-color: #404040;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: none;
+}
+
+.extract-panel {
+    display: none;
+}
+
+.extract-panel.active {
+    display: block;
+}
+
+#raw-text {
+    width: 100%;
     background: #fff;
     border: 2px solid;
     border-top-color: #404040;
@@ -39,11 +84,253 @@
     resize: vertical;
 }
 
-#add-correction { align-self: flex-start; }
+.file-drop {
+    border: 2px dashed #808080;
+    padding: 24px 12px;
+    text-align: center;
+    cursor: pointer;
+    color: #404040;
+    background: #fff;
+}
 
-#form-status { font-size: 11px; }
+.file-drop:hover,
+.file-drop.dragover {
+    border-color: #000080;
+    background: #e8eef6;
+}
 
-#list-window { margin-top: 20px; }
+.file-drop-hint {
+    font-size: 10px;
+    color: #555;
+    margin-top: 4px;
+}
+
+#pdf-status {
+    margin-top: 6px;
+    font-size: 11px;
+}
+
+.progress-bar {
+    height: 6px;
+    background: #808080;
+    margin-top: 4px;
+    border: 1px solid #404040;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: #000080;
+    width: 0%;
+    transition: width 0.2s;
+}
+
+.separator-config {
+    margin-top: 8px;
+    padding: 6px;
+    background: #c0c0c0;
+    border: 1px solid #808080;
+}
+
+.separator-config label {
+    display: block;
+    font-weight: bold;
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.separator-config input[type="text"] {
+    width: 100%;
+    background: #fff;
+    border: 2px solid;
+    border-top-color: #404040;
+    border-left-color: #404040;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    padding: 4px 6px;
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+}
+
+.separator-config .hint {
+    color: #404040;
+    font-size: 10px;
+    margin-top: 4px;
+}
+
+.extract-actions {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#extract-status {
+    font-size: 11px;
+}
+
+/* === Cartes des exercices extraits === */
+
+.cards-actions {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+#cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.ex-card {
+    background: #fff;
+    border: 2px solid;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #404040;
+    border-bottom-color: #404040;
+    padding: 8px;
+}
+
+.ex-card.unselected {
+    opacity: 0.55;
+}
+
+.ex-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.ex-card-header input[type="checkbox"] {
+    margin: 0;
+}
+
+.ex-card-header .ex-num {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.ex-card-header .ex-delete {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #800000;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 2px 4px;
+}
+
+.ex-card-header .ex-delete:hover {
+    color: #c00000;
+}
+
+.ex-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ex-card-body label {
+    font-weight: bold;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.ex-card-body input[type="text"],
+.ex-card-body input[type="number"],
+.ex-card-body textarea,
+.ex-card-body select {
+    background: #fff;
+    border: 2px solid;
+    border-top-color: #404040;
+    border-left-color: #404040;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    padding: 4px 6px;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    resize: vertical;
+}
+
+.ex-card-row {
+    display: flex;
+    gap: 8px;
+}
+
+.ex-card-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ex-card-field label {
+    font-weight: bold;
+    font-size: 11px;
+    margin-top: 0;
+}
+
+.opt {
+    font-weight: normal;
+    color: #555;
+}
+
+/* Tags de thèmes dans les cartes */
+
+.theme-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 3px;
+}
+
+.theme-tag {
+    background: #e8eef6;
+    border: 1px solid #000080;
+    padding: 1px 4px 1px 6px;
+    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.theme-tag .remove-tag {
+    cursor: pointer;
+    color: #555;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.theme-tag .remove-tag:hover {
+    color: #c00000;
+}
+
+.theme-add select {
+    width: 100%;
+    border: 2px solid;
+    border-top-color: #404040;
+    border-left-color: #404040;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    background: #fff;
+    font-size: 10px;
+    padding: 2px 4px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 24px;
+    color: #555;
+    font-size: 11px;
+}
+
+/* === Liste des exercices enregistrés === */
 
 #exercise-list {
     display: flex;
@@ -70,6 +357,11 @@
     margin-bottom: 4px;
 }
 
+.exercise-item .exercise-text {
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
 .exercise-item .correction-block {
     background: #e8e8f8;
     border: 1px solid #000080;
@@ -78,8 +370,21 @@
     font-size: 11px;
 }
 
+.exercise-item .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 4px;
+}
+
+.exercise-item .tag {
+    background: #e8eef6;
+    border: 1px solid #000080;
+    padding: 1px 6px;
+    font-size: 10px;
+}
+
 button.primary {
     font-weight: bold;
     background: #c0c0c0;
-    align-self: flex-start;
 }

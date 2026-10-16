@@ -7,6 +7,10 @@ const msgCount = document.getElementById("msg-count");
 
 let evaluationCount = 0;
 
+function getApiKey() {
+    return localStorage.getItem("mistral_api_key") || "";
+}
+
 function formatTime() {
     return new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
@@ -63,9 +67,15 @@ form.addEventListener("submit", function (event) {
     answerInput.value = "";
     statusBar.textContent = "Évaluation en cours...";
 
+    var headers = { "Content-Type": "application/json" };
+    var apiKey = getApiKey();
+    if (apiKey) {
+        headers["X-Mistral-API-Key"] = apiKey;
+    }
+
     fetch("/api/evaluate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify({ problem: problem, student_answer: answer }),
     })
         .then(function (res) {

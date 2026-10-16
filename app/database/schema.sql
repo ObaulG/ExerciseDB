@@ -4,10 +4,13 @@
 -- À exécuter dans le SQL Editor de Supabase, ou automatiquement via db.init_db().
 
 CREATE TABLE IF NOT EXISTS exercise (
-    id         SERIAL PRIMARY KEY,
-    name       TEXT NOT NULL,
-    text       TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    id          SERIAL PRIMARY KEY,
+    name        TEXT NOT NULL,
+    text        TEXT NOT NULL,
+    type        TEXT,
+    niveau      TEXT,
+    temps_estime INTEGER,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS correction (
@@ -18,6 +21,23 @@ CREATE TABLE IF NOT EXISTS correction (
 );
 
 CREATE INDEX IF NOT EXISTS idx_correction_exercise ON correction(exercise_id);
+
+-- --- Thèmes : table dédiée + table de liaison many-to-many ---
+
+CREATE TABLE IF NOT EXISTS theme (
+    id    SERIAL PRIMARY KEY,
+    label TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS exercise_theme (
+    exercise_id INTEGER NOT NULL REFERENCES exercise(id) ON DELETE CASCADE,
+    theme_id    INTEGER NOT NULL REFERENCES theme(id) ON DELETE CASCADE,
+    PRIMARY KEY (exercise_id, theme_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_exercise_theme_theme ON exercise_theme(theme_id);
+
+-- --- Authentification ---
 
 CREATE TABLE IF NOT EXISTS "user" (
     id            SERIAL PRIMARY KEY,

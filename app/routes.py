@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
+from typing import Annotated
 
 from app.llm.agent import evaluate_answer
 from app.llm.schemas import MathAnswerEvaluationSchema
@@ -13,9 +14,14 @@ class EvaluationRequest(BaseModel):
 
 
 @router.post("/evaluate", response_model=MathAnswerEvaluationSchema)
-async def evaluate(request: EvaluationRequest) -> MathAnswerEvaluationSchema:
+async def evaluate(
+    request: EvaluationRequest,
+    x_mistral_api_key: Annotated[str | None, Header()] = None,
+) -> MathAnswerEvaluationSchema:
     try:
-        return evaluate_answer(request.problem, request.student_answer)
+        return evaluate_answer(
+            request.problem, request.student_answer, api_key=x_mistral_api_key
+        )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:

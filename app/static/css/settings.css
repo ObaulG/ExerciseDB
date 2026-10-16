@@ -1,0 +1,67 @@
+#settings-window {
+    max-width: 560px;
+}
+
+.settings-intro {
+    font-size: 11px;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.settings-help {
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.settings-help a {
+    color: #000080;
+    text-decoration: underline;
+}
+
+#api-key-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#api-key-form label {
+    font-weight: bold;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+#api-key-input {
+    background: #fff;
+    border: 2px solid;
+    border-top-color: #404040;
+    border-left-color: #404040;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    padding: 5px 8px;
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+}
+
+.settings-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+#key-status {
+    font-size: 11px;
+}
+
+#key-test-result {
+    margin-top: 8px;
+    font-size: 11px;
+}
+
+#key-test-result .test-ok {
+    color: #008000;
+}
+
+#key-test-result .test-ko {
+    color: #a00;
+}

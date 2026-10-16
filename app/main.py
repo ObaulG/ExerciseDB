@@ -42,6 +42,11 @@ async def profile_page(request: Request):
     return templates.TemplateResponse(request, "profile.html.j2")
 
 
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    return templates.TemplateResponse(request, "settings.html.j2")
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}

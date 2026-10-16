@@ -5,7 +5,7 @@ from app.main import app
 
 
 def test_evaluate_endpoint(monkeypatch):
-    def fake_evaluate(problem, student_answer):
+    def fake_evaluate(problem, student_answer, api_key=None):
         return MathAnswerEvaluationSchema(
             is_correct=True,
             score=10,

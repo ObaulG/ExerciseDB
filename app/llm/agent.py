@@ -28,31 +28,28 @@ SYSTEM_PROMPT = SystemPromptGenerator(
     ],
 )
 
-_agent: AtomicAgent | None = None
 
-
-def get_evaluation_agent() -> AtomicAgent:
-    global _agent
-    if _agent is None:
-        api_key = os.environ.get("MISTRAL_API_KEY")
-        if not api_key:
-            raise RuntimeError("La variable d'environnement MISTRAL_API_KEY n'est pas définie.")
-
-        mistral_client = Mistral(api_key=api_key)
-        client = instructor.from_mistral(mistral_client)
-
-        _agent = AtomicAgent[ProblemInputSchema, MathAnswerEvaluationSchema](
-            config=AgentConfig(
-                client=client,
-                model=MISTRAL_MODEL,
-                system_prompt_generator=SYSTEM_PROMPT,
-                history=ChatHistory(),
-            )
+def _build_agent(api_key: str | None) -> AtomicAgent:
+    key = api_key or os.environ.get("MISTRAL_API_KEY")
+    if not key:
+        raise RuntimeError(
+            "Aucune clé API Mistral configurée. "
+            "Renseignez-la sur la page /settings ou définissez MISTRAL_API_KEY."
         )
-    return _agent
+    mistral_client = Mistral(api_key=key)
+    client = instructor.from_mistral(mistral_client)
+    return AtomicAgent[ProblemInputSchema, MathAnswerEvaluationSchema](
+        config=AgentConfig(
+            client=client,
+            model=MISTRAL_MODEL,
+            system_prompt_generator=SYSTEM_PROMPT,
+            history=ChatHistory(),
+        ),
+    )
 
 
-def evaluate_answer(problem: str, student_answer: str) -> MathAnswerEvaluationSchema:
-    agent = get_evaluation_agent()
-    agent.history = ChatHistory()
+def evaluate_answer(
+    problem: str, student_answer: str, api_key: str | None = None
+) -> MathAnswerEvaluationSchema:
+    agent = _build_agent(api_key)
     return agent.run(ProblemInputSchema(problem=problem, student_answer=student_answer))

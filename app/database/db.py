@@ -6,7 +6,6 @@ DATABASE_URL: str | None = None
 
 _pool = None
 
-
 from psycopg.errors import UniqueViolation  # noqa: A004
 
 def _get_pool():
@@ -50,24 +49,70 @@ def init_db() -> None:
         conn.execute(SCHEMA_PATH.read_text(encoding="utf-8"))
 
 
-def create_exercise(name: str, text: str, corrections: list[str]) -> int:
+def _sync_themes(conn, exercise_id: int, themes: list[str]) -> None:
+    """Insère les thèmes inconnus dans la table ``theme`` puis crée les liaisons
+    dans ``exercise_theme``. Les thèmes existants ne sont pas dupliqués.
+    """
+    if not themes:
+        return
+    for label in themes:
+        conn.execute(
+            "INSERT INTO theme (label) VALUES (%s) ON CONFLICT (label) DO NOTHING",
+            (label,),
+        )
+    rows = conn.execute(
+        "SELECT id, label FROM theme WHERE label = ANY(%s)",
+        (themes,),
+    ).fetchall()
+    conn.execute(
+        "DELETE FROM exercise_theme WHERE exercise_id = %s",
+        (exercise_id,),
+    )
+    conn.cursor().executemany(
+        "INSERT INTO exercise_theme (exercise_id, theme_id) VALUES (%s, %s)",
+        [(exercise_id, r["id"]) for r in rows],
+    )
+
+
+def _fetch_themes(conn, exercise_id: int) -> list[str]:
+    rows = conn.execute(
+        "SELECT t.label FROM theme t "
+        "JOIN exercise_theme et ON et.theme_id = t.id "
+        "WHERE et.exercise_id = %s ORDER BY t.label",
+        (exercise_id,),
+    ).fetchall()
+    return [r["label"] for r in rows]
+
+
+def create_exercise(
+    name: str,
+    text: str,
+    corrections: list[str],
+    type: str | None = None,
+    niveau: str | None = None,
+    temps_estime: int | None = None,
+    themes: list[str] | None = None,
+) -> int:
     with get_connection() as conn:
         row = conn.execute(
-            "INSERT INTO exercise (name, text) VALUES (%s, %s) RETURNING id",
-            (name, text),
+            "INSERT INTO exercise (name, text, type, niveau, temps_estime) "
+            "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (name, text, type, niveau, temps_estime),
         ).fetchone()
         exercise_id = row["id"]
         conn.cursor().executemany(
             "INSERT INTO correction (exercise_id, text) VALUES (%s, %s)",
             [(exercise_id, c) for c in corrections],
         )
+        _sync_themes(conn, exercise_id, themes or [])
         return exercise_id
 
 
 def list_exercises() -> list[dict]:
     with get_connection() as conn:
         rows = conn.execute(
-            "SELECT id, name, text, created_at FROM exercise ORDER BY id DESC"
+            "SELECT id, name, text, type, niveau, temps_estime, created_at "
+            "FROM exercise ORDER BY id DESC"
         ).fetchall()
         result = []
         for row in rows:
@@ -80,6 +125,10 @@ def list_exercises() -> list[dict]:
                     "id": row["id"],
                     "name": row["name"],
                     "text": row["text"],
+                    "type": row["type"],
+                    "niveau": row["niveau"],
+                    "temps_estime": row["temps_estime"],
+                    "themes": _fetch_themes(conn, row["id"]),
                     "created_at": str(row["created_at"]),
                     "corrections": corrections,
                 }
@@ -90,7 +139,8 @@ def list_exercises() -> list[dict]:
 def get_exercise(exercise_id: int) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT id, name, text, created_at FROM exercise WHERE id = %s",
+            "SELECT id, name, text, type, niveau, temps_estime, created_at "
+            "FROM exercise WHERE id = %s",
             (exercise_id,),
         ).fetchone()
         if row is None:
@@ -103,6 +153,10 @@ def get_exercise(exercise_id: int) -> dict | None:
             "id": row["id"],
             "name": row["name"],
             "text": row["text"],
+            "type": row["type"],
+            "niveau": row["niveau"],
+            "temps_estime": row["temps_estime"],
+            "themes": _fetch_themes(conn, exercise_id),
             "created_at": str(row["created_at"]),
             "corrections": corrections,
         }
