@@ -43,8 +43,12 @@ CREATE TABLE IF NOT EXISTS "user" (
     id            SERIAL PRIMARY KEY,
     pseudo        TEXT NOT NULL,
     password_hash TEXT NOT NULL,
+    is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Migration : ajoute is_admin si la table existait avant l'ajout de la colonne.
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Unicité du pseudo insensible à la casse (équivalent de COLLATE NOCASE en SQLite).
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_pseudo_lower ON "user"(LOWER(pseudo));

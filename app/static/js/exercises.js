@@ -44,15 +44,29 @@ const THEMES_DISPONIBLES = [
 
 let extractedExercises = []; // [{ enonce, titre, type, niveau, temps, themes: [], correction, selected }]
 let currentMode = "parser"; // "parser" ou "agent"
+let isAdmin = false;
 
 // === Initialisation ===
 
 document.addEventListener("DOMContentLoaded", function () {
+    checkAdmin();
     initModeTabs();
     initExtractUI();
     initCardsActions();
     loadExercises();
 });
+
+function checkAdmin() {
+    fetch("/api/auth/me")
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (user) {
+            if (user && user.is_admin) {
+                isAdmin = true;
+                loadExercises();
+            }
+        })
+        .catch(function () {});
+}
 
 // === Onglets de mode (Parser / Agent LLM) ===
 
@@ -63,11 +77,6 @@ function initModeTabs() {
             tabs.forEach(function (t) { t.classList.remove("active"); });
             tab.classList.add("active");
             currentMode = tab.dataset.mode;
-            // Le séparateur n'est pertinent qu'en mode parser
-            var sepConfig = document.getElementById("separator-config");
-            if (sepConfig) {
-                sepConfig.style.display = (currentMode === "parser") ? "" : "none";
-            }
             // Mettre à jour le libellé du bouton
             var btn = document.getElementById("extract-btn");
             if (btn) {
@@ -245,26 +254,25 @@ async function extractWithLLM(raw, statusEl) {
 }
 
 function extractWithParser(raw, statusEl) {
-    var sep = document.getElementById("separator-input").value.trim();
+    var parsed = parseLatexExercises(raw);
 
-    var parts = sep ? splitBySeparator(raw, sep) : autoSplit(raw);
-    parts = parts.map(function (p) { return p.trim(); }).filter(function (p) { return p.length > 0; });
-
-    if (parts.length === 0) {
-        statusEl.textContent = "Aucun exercice détecté. Essayez un séparateur manuel.";
+    if (parsed.length === 0) {
+        statusEl.textContent = "Aucun environnement Exercise détecté. Vérifiez que votre LaTeX utilise \\begin{Exercise}...\\end{Exercise}.";
         return;
     }
 
-    extractedExercises = parts.map(function (text, i) {
+    // Préserve les champs édités manuellement quand l'indice existe déjà.
+    extractedExercises = parsed.map(function (item, i) {
         var existing = extractedExercises[i];
+        if (!existing) return item;
         return {
-            enonce: text,
-            titre: existing ? existing.titre : extractTitle(text),
-            type: existing ? existing.type : guessType(text),
-            niveau: existing ? existing.niveau : guessNiveau(text),
-            temps: existing ? existing.temps : "",
-            themes: existing ? existing.themes.slice() : guessThemes(text),
-            correction: existing ? existing.correction : "",
+            enonce: item.enonce,
+            titre: item.titre || existing.titre,
+            type: item.type || existing.type,
+            niveau: item.niveau || existing.niveau,
+            temps: item.temps || existing.temps,
+            themes: item.themes.length ? item.themes : existing.themes.slice(),
+            correction: item.correction || existing.correction,
             selected: true,
         };
     });
@@ -273,74 +281,157 @@ function extractWithParser(raw, statusEl) {
     statusEl.textContent = extractedExercises.length + " exercice(s) extrait(s).";
 }
 
-function splitBySeparator(text, sep) {
-    var escaped = sep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    var re = new RegExp(escaped, "gi");
-    var indices = [];
-    var m;
-    while ((m = re.exec(text)) !== null) {
-        indices.push(m.index);
+// === Parser LaTeX — package exercise (environnements Exercise / Answer) ===
+
+function parseLatexExercises(text) {
+    var exercises = [];
+
+    // Détecte \begin{Exercise}[titre optionnel] ... \end{Exercise}
+    var envRe = /\\begin\s*\{Exercise\}\s*(\[[^\]]*\])?/g;
+    var match;
+
+    while ((match = envRe.exec(text)) !== null) {
+        var optionalArg = match[1] || "";
+        var contentStart = match.index + match[0].length;
+
+        // Trouve le \end{Exercise} correspondant (gère l'imbrication)
+        var contentEnd = findLatexEnvironmentEnd(text, contentStart, "Exercise");
+        if (contentEnd === -1) continue;
+
+        var body = text.slice(contentStart, contentEnd);
+
+        // Titre depuis l'argument optionnel [titre]
+        var titre = "";
+        if (optionalArg) {
+            titre = optionalArg.replace(/^\[|\]$/g, "").trim();
+        }
+
+        // Extrait la correction depuis l'environnement Answer imbriqué
+        var correction = extractLatexAnswer(body);
+
+        // Nettoie le corps : retire les blocs Answer
+        var enonce = stripLatexAnswers(body).trim();
+
+        // Si pas de titre dans l'argument optionnel, essaie de le deviner
+        if (!titre) {
+            titre = extractTitle(enonce);
+        }
+
+        exercises.push({
+            enonce: enonce,
+            titre: titre,
+            type: guessType(enonce),
+            niveau: guessNiveau(enonce),
+            temps: "",
+            themes: guessThemes(enonce),
+            correction: correction,
+            selected: true,
+            _start: match.index,
+            _end: contentEnd + "\\end{Exercise}".length,
+        });
+
+        envRe.lastIndex = contentEnd + "\\end{Exercise}".length;
     }
-    if (indices.length === 0) return [text];
-    var parts = [];
-    for (var i = 0; i < indices.length; i++) {
-        var start = indices[i];
-        var end = i + 1 < indices.length ? indices[i + 1] : text.length;
-        parts.push(text.slice(start, end));
+
+    // Associe les environnements Answer orphelins (hors d'un Exercise)
+    // au dernier Exercise précédent — c'est le mode answerdelayed du package.
+    var ansRe = /\\begin\s*\{Answer\}\s*(\[[^\]]*\])?/g;
+    while ((match = ansRe.exec(text)) !== null) {
+        var ansContentStart = match.index + match[0].length;
+        var ansContentEnd = findLatexEnvironmentEnd(text, ansContentStart, "Answer");
+        if (ansContentEnd === -1) continue;
+
+        // Vérifie si cet Answer est déjà dans un Exercise (imbriqué)
+        var insideExercise = exercises.some(function (ex) {
+            return match.index >= ex._start && match.index < ex._end;
+        });
+        if (insideExercise) continue;
+
+        // Associe au dernier Exercise précédent
+        var target = null;
+        for (var i = exercises.length - 1; i >= 0; i--) {
+            if (exercises[i]._end <= match.index) {
+                target = exercises[i];
+                break;
+            }
+        }
+        if (target) {
+            var ansBody = text.slice(ansContentStart, ansContentEnd).trim();
+            if (target.correction) {
+                target.correction += "\n\n" + ansBody;
+            } else {
+                target.correction = ansBody;
+            }
+        }
+
+        ansRe.lastIndex = ansContentEnd + "\\end{Answer}".length;
     }
-    if (indices[0] > 0) {
-        var preamble = text.slice(0, indices[0]).trim();
-        if (preamble.length > 20) parts.unshift(preamble);
-    }
-    return parts;
+
+    // Nettoie les champs internes de positionnement
+    exercises.forEach(function (ex) {
+        delete ex._start;
+        delete ex._end;
+    });
+
+    return exercises;
 }
 
-function autoSplit(text) {
-    var patterns = [
-        /(?:^|\n)\s*Exercice\s+\d+/i,
-        /(?:^|\n)\s*Ex\.?\s+\d+/i,
-        /(?:^|\n)\s*Exo\.?\s+\d+/i,
-        /(?:^|\n)\s*\\begin\{exercice\}/i,
-        /(?:^|\n)\s*\\begin\{exo\}/i,
-        /(?:^|\n)\s*\\exercice\b/i,
-        /(?:^|\n)\s*\\exo\b/i,
-        /(?:^|\n)\s*@exercice\b/i,
-        /(?:^|\n)\s*@exo\b/i,
-        /(?:^|\n)\s*#\s*Exercice\b/i,
-        /(?:^|\n)\s*#\s*Exo\b/i,
-        /(?:^|\n)\s*Probl[èe]me\s+\d+/i,
-        /(?:^|\n)\s*Question\s+\d+/i,
-    ];
+function findLatexEnvironmentEnd(text, start, envName) {
+    var openTag = "\\begin{" + envName + "}";
+    var closeTag = "\\end{" + envName + "}";
+    var depth = 1;
+    var pos = start;
 
-    var matches = [];
-    patterns.forEach(function (pat) {
-        var re = new RegExp(pat.source, "gi");
-        var m;
-        while ((m = re.exec(text)) !== null) {
-            matches.push(m.index);
+    while (pos < text.length) {
+        var nextOpen = text.indexOf(openTag, pos);
+        var nextClose = text.indexOf(closeTag, pos);
+
+        if (nextClose === -1) return -1;
+
+        if (nextOpen !== -1 && nextOpen < nextClose) {
+            depth++;
+            pos = nextOpen + openTag.length;
+        } else {
+            depth--;
+            if (depth === 0) return nextClose;
+            pos = nextClose + closeTag.length;
         }
-    });
+    }
+    return -1;
+}
 
-    if (matches.length === 0) {
-        var paras = text.split(/\n\s*\n/).filter(function (p) { return p.trim().length > 0; });
-        return paras.length > 1 ? paras : [text];
+function extractLatexAnswer(body) {
+    var correction = "";
+
+    // \begin{Answer}[optionnel] ... \end{Answer}
+    var ansRe = /\\begin\s*\{Answer\}\s*(\[[^\]]*\])?/g;
+    var match;
+    while ((match = ansRe.exec(body)) !== null) {
+        var contentStart = match.index + match[0].length;
+        var contentEnd = findLatexEnvironmentEnd(body, contentStart, "Answer");
+        if (contentEnd === -1) continue;
+        if (correction) correction += "\n\n";
+        correction += body.slice(contentStart, contentEnd).trim();
     }
 
-    matches.sort(function (a, b) { return a - b; });
-    var deduped = [];
-    matches.forEach(function (idx) {
-        if (deduped.length === 0 || idx > deduped[deduped.length - 1] + 1) {
-            deduped.push(idx);
-        }
-    });
+    return correction.trim();
+}
 
-    var parts = [];
-    for (var i = 0; i < deduped.length; i++) {
-        var start = deduped[i];
-        var end = i + 1 < deduped.length ? deduped[i + 1] : text.length;
-        parts.push(text.slice(start, end));
+function stripLatexAnswers(body) {
+    var out = body;
+
+    // Retire \begin{Answer}...\end{Answer}
+    var ansRe = /\\begin\s*\{Answer\}\s*(\[[^\]]*\])?/g;
+    var match;
+    while ((match = ansRe.exec(out)) !== null) {
+        var contentStart = match.index + match[0].length;
+        var contentEnd = findLatexEnvironmentEnd(out, contentStart, "Answer");
+        if (contentEnd === -1) continue;
+        out = out.slice(0, match.index) + out.slice(contentEnd + "\\end{Answer}".length);
+        ansRe.lastIndex = match.index;
     }
-    return parts;
+
+    return out;
 }
 
 // === Devinettes automatiques ===
@@ -717,49 +808,251 @@ function loadExercises() {
             exerciseCount.textContent = exercises.length + " exercice(s)";
             exerciseList.innerHTML = "";
             exercises.forEach(function (ex) {
-                var item = document.createElement("div");
-                item.className = "exercise-item";
-
-                var title = document.createElement("h3");
-                title.textContent = "#" + ex.id + " — " + ex.name;
-
-                var meta = document.createElement("div");
-                meta.className = "meta";
-                var metaParts = ["Ajouté le " + ex.created_at];
-                if (ex.type) metaParts.push(ex.type);
-                if (ex.niveau) metaParts.push(ex.niveau);
-                if (ex.temps_estime) metaParts.push(ex.temps_estime + " min");
-                meta.textContent = metaParts.join(" · ");
-
-                item.appendChild(title);
-                item.appendChild(meta);
-
-                if (ex.themes && ex.themes.length > 0) {
-                    var tags = document.createElement("div");
-                    tags.className = "tags";
-                    ex.themes.forEach(function (t) {
-                        var tag = document.createElement("span");
-                        tag.className = "tag";
-                        tag.textContent = t;
-                        tags.appendChild(tag);
-                    });
-                    item.appendChild(tags);
-                }
-
-                var body = document.createElement("div");
-                body.className = "exercise-text";
-                body.textContent = ex.text;
-                item.appendChild(body);
-
-                (ex.corrections || []).forEach(function (c) {
-                    var block = document.createElement("div");
-                    block.className = "correction-block";
-                    block.textContent = c.text;
-                    item.appendChild(block);
-                });
-
-                exerciseList.appendChild(item);
-                renderMath(item);
+                exerciseList.appendChild(buildExerciseItem(ex));
             });
         });
+}
+
+function buildExerciseItem(ex) {
+    var item = document.createElement("div");
+    item.className = "exercise-item";
+
+    var title = document.createElement("h3");
+    title.textContent = "#" + ex.id + " — " + ex.name;
+
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    var metaParts = ["Ajouté le " + ex.created_at];
+    if (ex.type) metaParts.push(ex.type);
+    if (ex.niveau) metaParts.push(ex.niveau);
+    if (ex.temps_estime) metaParts.push(ex.temps_estime + " min");
+    meta.textContent = metaParts.join(" · ");
+
+    item.appendChild(title);
+    item.appendChild(meta);
+
+    if (ex.themes && ex.themes.length > 0) {
+        var tags = document.createElement("div");
+        tags.className = "tags";
+        ex.themes.forEach(function (t) {
+            var tag = document.createElement("span");
+            tag.className = "tag";
+            tag.textContent = t;
+            tags.appendChild(tag);
+        });
+        item.appendChild(tags);
+    }
+
+    var body = document.createElement("div");
+    body.className = "exercise-text";
+    body.textContent = ex.text;
+    item.appendChild(body);
+
+    (ex.corrections || []).forEach(function (c) {
+        var block = document.createElement("div");
+        block.className = "correction-block";
+        block.textContent = c.text;
+        item.appendChild(block);
+    });
+
+    renderMath(item);
+
+    if (isAdmin) {
+        var adminActions = document.createElement("div");
+        adminActions.className = "exercise-admin-actions";
+        adminActions.style.marginTop = "6px";
+        adminActions.style.display = "flex";
+        adminActions.style.gap = "6px";
+        adminActions.style.alignItems = "center";
+
+        var editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "retro-btn edit-exercise-btn";
+        editBtn.textContent = "✏️ Modifier";
+        editBtn.addEventListener("click", function () {
+            toggleEditForm(item, ex);
+        });
+        adminActions.appendChild(editBtn);
+
+        var delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "retro-btn delete-exercise-btn";
+        delBtn.textContent = "🗑️ Supprimer";
+        delBtn.addEventListener("click", function () {
+            deleteExercise(ex, item);
+        });
+        adminActions.appendChild(delBtn);
+
+        item.appendChild(adminActions);
+    }
+
+    return item;
+}
+
+function toggleEditForm(item, ex) {
+    var existingForm = item.querySelector(".edit-form");
+    if (existingForm) {
+        existingForm.remove();
+        return;
+    }
+
+    var form = document.createElement("div");
+    form.className = "edit-form";
+
+    // Nom
+    var lblName = document.createElement("label");
+    lblName.textContent = "Titre";
+    form.appendChild(lblName);
+    var inpName = document.createElement("input");
+    inpName.type = "text";
+    inpName.value = ex.name;
+    form.appendChild(inpName);
+
+    // Énoncé
+    var lblText = document.createElement("label");
+    lblText.textContent = "Énoncé";
+    form.appendChild(lblText);
+    var taText = document.createElement("textarea");
+    taText.rows = 4;
+    taText.value = ex.text;
+    form.appendChild(taText);
+
+    // Ligne : Type + Niveau + Temps
+    var row = document.createElement("div");
+    row.className = "ex-card-row";
+
+    var fieldType = document.createElement("div");
+    fieldType.className = "ex-card-field";
+    var lblType = document.createElement("label");
+    lblType.textContent = "Type";
+    fieldType.appendChild(lblType);
+    var selType = document.createElement("select");
+    selType.innerHTML = '<option value="">—</option>' +
+        TYPES_EXERCICE.map(function (t) {
+            return '<option value="' + t + '"' + (ex.type === t ? " selected" : "") + ">" + t + "</option>";
+        }).join("");
+    fieldType.appendChild(selType);
+    row.appendChild(fieldType);
+
+    var fieldNiveau = document.createElement("div");
+    fieldNiveau.className = "ex-card-field";
+    var lblNiveau = document.createElement("label");
+    lblNiveau.textContent = "Niveau";
+    fieldNiveau.appendChild(lblNiveau);
+    var selNiveau = document.createElement("select");
+    selNiveau.innerHTML = '<option value="">—</option>' +
+        NIVEAUX_SCOLAIRES.map(function (n) {
+            return '<option value="' + n + '"' + (ex.niveau === n ? " selected" : "") + ">" + n + "</option>";
+        }).join("");
+    fieldNiveau.appendChild(selNiveau);
+    row.appendChild(fieldNiveau);
+
+    var fieldTemps = document.createElement("div");
+    fieldTemps.className = "ex-card-field";
+    var lblTemps = document.createElement("label");
+    lblTemps.innerHTML = "Temps <span class=\"opt\">(min)</span>";
+    fieldTemps.appendChild(lblTemps);
+    var inpTemps = document.createElement("input");
+    inpTemps.type = "number";
+    inpTemps.min = "0";
+    inpTemps.value = ex.temps_estime || "";
+    fieldTemps.appendChild(inpTemps);
+    row.appendChild(fieldTemps);
+
+    form.appendChild(row);
+
+    // Correction
+    var lblCorrection = document.createElement("label");
+    lblCorrection.textContent = "Correction";
+    form.appendChild(lblCorrection);
+    var taCorrection = document.createElement("textarea");
+    taCorrection.rows = 3;
+    var correctionText = (ex.corrections || []).map(function (c) { return c.text; }).join("\n\n");
+    taCorrection.value = correctionText;
+    form.appendChild(taCorrection);
+
+    // Boutons
+    var actions = document.createElement("div");
+    actions.className = "extract-actions";
+    actions.style.marginTop = "8px";
+
+    var saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "retro-btn primary";
+    saveBtn.textContent = "💾 Enregistrer";
+
+    var cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "retro-btn";
+    cancelBtn.textContent = "Annuler";
+
+    var statusSpan = document.createElement("span");
+    statusSpan.style.fontSize = "11px";
+
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    actions.appendChild(statusSpan);
+    form.appendChild(actions);
+
+    cancelBtn.addEventListener("click", function () { form.remove(); });
+
+    saveBtn.addEventListener("click", async function () {
+        saveBtn.disabled = true;
+        statusSpan.textContent = "Enregistrement…";
+
+        var corrections = [];
+        if (taCorrection.value.trim()) {
+            corrections.push({ text: taCorrection.value.trim() });
+        }
+
+        try {
+            var res = await fetch("/api/exercises/" + ex.id, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: inpName.value.trim(),
+                    text: taText.value.trim(),
+                    type: selType.value || null,
+                    niveau: selNiveau.value || null,
+                    temps_estime: inpTemps.value ? parseInt(inpTemps.value, 10) : null,
+                    themes: ex.themes || [],
+                    corrections: corrections,
+                }),
+            });
+
+            if (!res.ok) {
+                var err = await res.json().catch(function () { return { detail: "Erreur" }; });
+                throw new Error(err.detail || "Erreur lors de la modification");
+            }
+
+            statusSpan.textContent = "Modifié.";
+            setTimeout(function () { loadExercises(); }, 500);
+        } catch (err) {
+            statusSpan.textContent = "Erreur : " + err.message;
+            saveBtn.disabled = false;
+        }
+    });
+
+    item.appendChild(form);
+}
+
+async function deleteExercise(ex, item) {
+    if (!confirm("Supprimer l'exercice #" + ex.id + " — « " + ex.name + " » ?\\nCette action est irréversible.")) {
+        return;
+    }
+
+    var delBtn = item.querySelector(".delete-exercise-btn");
+    if (delBtn) delBtn.disabled = true;
+
+    try {
+        var res = await fetch("/api/exercises/" + ex.id, { method: "DELETE" });
+        if (!res.ok) {
+            var err = await res.json().catch(function () { return { detail: "Erreur" }; });
+            throw new Error(err.detail || "Erreur lors de la suppression");
+        }
+        loadExercises();
+    } catch (err) {
+        alert("Erreur : " + err.message);
+        if (delBtn) delBtn.disabled = false;
+    }
 }

@@ -103,3 +103,21 @@ class ExtractionOutputSchema(BaseIOSchema):
         ...,
         description="La liste des exercices identifiés dans le document, avec leurs métadonnées et corrections.",
     )
+
+
+class CorrectionGenerationInputSchema(BaseIOSchema):
+    """Entrée soumise à l'agent de génération de corrigé : l'énoncé d'un exercice."""
+
+    enonce: str = Field(
+        ...,
+        description="L'énoncé complet de l'exercice à corriger, en LaTeX balisé si nécessaire.",
+    )
+
+
+class CorrectionGenerationOutputSchema(BaseIOSchema):
+    """Corrigé généré par l'agent LLM pour un exercice donné."""
+
+    correction: str = Field(
+        ...,
+        description="Corrigé complet et détaillé de l'exercice, avec toutes les étapes de résolution, en LaTeX balisé si nécessaire.",
+    )

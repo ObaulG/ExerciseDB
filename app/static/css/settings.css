@@ -1,11 +1,12 @@
 #settings-window {
-    max-width: 560px;
+    max-width: 100%;
 }
 
 .settings-intro {
     font-size: 11px;
     margin-bottom: 8px;
     line-height: 1.5;
+    color: var(--texte);
 }
 
 .settings-help {
@@ -14,7 +15,7 @@
 }
 
 .settings-help a {
-    color: #000080;
+    color: var(--bleu);
     text-decoration: underline;
 }
 
@@ -28,15 +29,16 @@
     font-weight: bold;
     font-size: 11px;
     margin-top: 4px;
+    color: var(--bleu-fonce);
 }
 
 #api-key-input {
-    background: #fff;
+    background: #ffffff;
     border: 2px solid;
-    border-top-color: #404040;
-    border-left-color: #404040;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
     padding: 5px 8px;
     font-family: "Courier New", monospace;
     font-size: 12px;
@@ -51,6 +53,7 @@
 
 #key-status {
     font-size: 11px;
+    color: var(--bleu-fonce);
 }
 
 #key-test-result {
@@ -59,9 +62,11 @@
 }
 
 #key-test-result .test-ok {
-    color: #008000;
+    color: var(--vert-fonce);
+    font-weight: bold;
 }
 
 #key-test-result .test-ko {
-    color: #a00;
+    color: #990000;
+    font-weight: bold;
 }

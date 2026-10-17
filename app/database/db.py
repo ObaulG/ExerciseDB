@@ -163,3 +163,115 @@ def get_exercise(exercise_id: int) -> dict | None:
             "created_at": str(row["created_at"]),
             "corrections": corrections,
         }
+
+
+def update_exercise(
+    exercise_id: int,
+    name: str,
+    text: str,
+    type: str | None = None,
+    niveau: str | None = None,
+    temps_estime: int | None = None,
+    themes: list[str] | None = None,
+    corrections: list[str] | None = None,
+) -> dict | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            "UPDATE exercise SET name = %s, text = %s, type = %s, niveau = %s, "
+            "temps_estime = %s WHERE id = %s RETURNING id",
+            (name, text, type, niveau, temps_estime, exercise_id),
+        ).fetchone()
+        if row is None:
+            return None
+
+        if corrections is not None:
+            conn.execute("DELETE FROM correction WHERE exercise_id = %s", (exercise_id,))
+            conn.cursor().executemany(
+                "INSERT INTO correction (exercise_id, text) VALUES (%s, %s)",
+                [(exercise_id, c) for c in corrections],
+            )
+
+        _sync_themes(conn, exercise_id, themes or [])
+        return get_exercise(exercise_id)
+
+
+def delete_exercise(exercise_id: int) -> bool:
+    """Supprime un exercice. Les corrections et liaisons de thèmes sont
+    supprimées en cascade grâce aux contraintes ON DELETE CASCADE du schéma.
+    Retourne True si une ligne a été supprimée, False sinon.
+    """
+    with get_connection() as conn:
+        row = conn.execute(
+            "DELETE FROM exercise WHERE id = %s RETURNING id",
+            (exercise_id,),
+        ).fetchone()
+        return row is not None
+
+
+def search_exercises(
+    query: str | None = None,
+    type: str | None = None,
+    niveau: str | None = None,
+    theme: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    """Recherche d'exercices par titre, type, niveau et thème.
+    Les corrections ne sont jamais renvoyées (page entraînement).
+    """
+    with get_connection() as conn:
+        sql = (
+            "SELECT DISTINCT e.id, e.name, e.text, e.type, e.niveau, "
+            "e.temps_estime, e.created_at "
+            "FROM exercise e "
+        )
+        clauses = []
+        params: list = []
+
+        if theme:
+            sql += "JOIN exercise_theme et ON et.exercise_id = e.id "
+            sql += "JOIN theme t ON t.id = et.theme_id "
+            clauses.append("t.label = %s")
+            params.append(theme)
+
+        if query:
+            clauses.append("e.name ILIKE %s")
+            params.append(f"%{query}%")
+
+        if type:
+            clauses.append("e.type = %s")
+            params.append(type)
+
+        if niveau:
+            clauses.append("e.niveau = %s")
+            params.append(niveau)
+
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+
+        sql += " ORDER BY e.id DESC LIMIT %s"
+        params.append(limit)
+
+        rows = conn.execute(sql, params).fetchall()
+        result = []
+        for row in rows:
+            result.append(
+                {
+                    "id": row["id"],
+                    "name": row["name"],
+                    "text": row["text"],
+                    "type": row["type"],
+                    "niveau": row["niveau"],
+                    "temps_estime": row["temps_estime"],
+                    "themes": _fetch_themes(conn, row["id"]),
+                    "created_at": str(row["created_at"]),
+                }
+            )
+        return result
+
+
+def get_all_themes() -> list[str]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT label FROM theme ORDER BY label"
+        ).fetchall()
+        return [r["label"] for r in rows]

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel, Field
 from typing import Annotated
 
+from app import auth
 from app.database import db
 from app.llm.extraction_agent import extract_exercises
 
@@ -79,3 +80,34 @@ async def get_exercise(exercise_id: int) -> dict:
     if exercise is None:
         raise HTTPException(status_code=404, detail="Exercice introuvable")
     return exercise
+
+
+@router.put("/{exercise_id}")
+async def update_exercise(exercise_id: int, payload: ExerciseIn, request: Request) -> dict:
+    user = auth.get_current_user(request)
+    if user is None or not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Réservé aux administrateurs.")
+    exercise = db.update_exercise(
+        exercise_id=exercise_id,
+        name=payload.name,
+        text=payload.text,
+        type=payload.type,
+        niveau=payload.niveau,
+        temps_estime=payload.temps_estime,
+        themes=payload.themes,
+        corrections=[c.text for c in payload.corrections],
+    )
+    if exercise is None:
+        raise HTTPException(status_code=404, detail="Exercice introuvable")
+    return {"id": exercise_id, "exercise": exercise}
+
+
+@router.delete("/{exercise_id}", status_code=200)
+async def delete_exercise(exercise_id: int, request: Request) -> dict:
+    user = auth.get_current_user(request)
+    if user is None or not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Réservé aux administrateurs.")
+    deleted = db.delete_exercise(exercise_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Exercice introuvable")
+    return {"id": exercise_id, "status": "deleted"}

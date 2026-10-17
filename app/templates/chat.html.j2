@@ -9,48 +9,63 @@
     <link rel="stylesheet" href="/static/css/auth.css">
 </head>
 <body>
-    <header class="site-header">
-        {% include "_header.html.j2" %}
+    <header class="site-banner">
+        <h1>Assistant Maths</h1>
+        <div class="site-tagline">Évaluateur de réponses &amp; base d'exercices</div>
     </header>
 
-    <nav class="retro-nav">
-        <a href="/" class="retro-btn">💬 Chat</a>
-        <a href="/exercises" class="retro-btn">📚 Exercices</a>
-        <a href="/settings" class="retro-btn">⚙️ Paramètres</a>
-    </nav>
-    <div class="window" id="chat-window">
-        <div class="title-bar">
-            <div class="title-bar-controls">
-                <button aria-label="Minimize"></button>
-                <button aria-label="Maximize"></button>
-                <button aria-label="Close"></button>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">Menu</div>
+            <div class="sidebar-auth">
+                {% include "_header.html.j2" %}
             </div>
-            <h1 class="title-bar-text">💬 Assistant Maths — Évaluateur de réponses</h1>
-        </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="active">💬 Chat</a>
+                <a href="/exercises">📚 Exercices</a>
+                <a href="/training">✏️ Entraînement</a>
+                <a href="/settings">⚙️ Paramètres</a>
+                <a href="/profile">👤 Profil</a>
+            </nav>
+        </aside>
 
-        <div class="window-body">
-            <div class="chat-messages" id="chat-messages">
-                <div class="message bot">
-                    <div class="avatar">🤖</div>
-                    <div class="bubble">
-                        <div class="msg-header">Assistant · <span class="msg-time">--:--</span></div>
-                        <p>Bonjour 👋 Donnez-moi un <strong>problème de maths</strong> et votre <strong>réponse</strong> : je les évaluerai et vous donnerai un feedback détaillé.</p>
+        <main class="content">
+            <div class="content-header">
+                <h1>💬 Assistant Maths — Évaluateur de réponses</h1>
+            </div>
+
+            <div class="content-body">
+                <div class="window" id="chat-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">💬 Évaluateur de réponses</h2>
+                    </div>
+
+                    <div class="window-body">
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="message bot">
+                                <div class="avatar">🤖</div>
+                                <div class="bubble">
+                                    <div class="msg-header">Assistant · <span class="msg-time">--:--</span></div>
+                                    <p>Bonjour 👋 Donnez-moi un <strong>problème de maths</strong> et votre <strong>réponse</strong> : je les évaluerai et vous donnerai un feedback détaillé.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form class="chat-input" id="chat-form" autocomplete="off">
+                            <input type="text" id="problem-input" placeholder="Énoncé du problème..." aria-label="Problème">
+                            <input type="text" id="answer-input" placeholder="Votre réponse..." aria-label="Réponse">
+                            <button type="submit" class="send-btn">Envoyer ➤</button>
+                        </form>
+                    </div>
+
+                    <div class="status-bar">
+                        <span class="status-field">Prêt</span>
+                        <span class="status-field" id="msg-count">0 évaluation(s)</span>
+                        <span class="status-field">v1.0</span>
                     </div>
                 </div>
             </div>
-
-            <form class="chat-input" id="chat-form" autocomplete="off">
-                <input type="text" id="problem-input" placeholder="Énoncé du problème..." aria-label="Problème">
-                <input type="text" id="answer-input" placeholder="Votre réponse..." aria-label="Réponse">
-                <button type="submit" class="send-btn">Envoyer ➤</button>
-            </form>
-        </div>
-
-        <div class="status-bar">
-            <span class="status-field">Prêt</span>
-            <span class="status-field" id="msg-count">0 évaluation(s)</span>
-            <span class="status-field">CSS rétro v1.0</span>
-        </div>
+        </main>
     </div>
 
     <script defer src="/static/js/auth.js"></script>

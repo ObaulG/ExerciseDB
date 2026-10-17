@@ -1,25 +1,10 @@
-.retro-nav {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    display: flex;
-    gap: 4px;
-    z-index: 10;
-}
-
-.retro-nav a {
-    text-decoration: none;
-    color: #000;
-    font-size: 11px;
-}
-
 /* === Zone d'extraction === */
 
 #extract-window,
 #cards-window,
 #list-window {
-    max-width: 900px;
-    margin-bottom: 20px;
+    max-width: 100%;
+    margin-bottom: 12px;
 }
 
 .mode-tabs {
@@ -34,11 +19,9 @@
 }
 
 .mode-tab.active {
-    font-weight: bold;
-    border-top-color: #404040;
-    border-left-color: #404040;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
+    background: linear-gradient(180deg, var(--vert-pale) 0%, var(--vert-clair) 100%);
+    color: var(--vert-fonce);
+    border-color: var(--vert-fonce);
     box-shadow: none;
 }
 
@@ -54,11 +37,9 @@
 }
 
 .extract-tab.active {
-    font-weight: bold;
-    border-top-color: #404040;
-    border-left-color: #404040;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
+    background: linear-gradient(180deg, var(--vert-pale) 0%, var(--vert-clair) 100%);
+    color: var(--vert-fonce);
+    border-color: var(--vert-fonce);
     box-shadow: none;
 }
 
@@ -72,12 +53,12 @@
 
 #raw-text {
     width: 100%;
-    background: #fff;
+    background: #ffffff;
     border: 2px solid;
-    border-top-color: #404040;
-    border-left-color: #404040;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
     padding: 5px 8px;
     font-family: "Courier New", monospace;
     font-size: 12px;
@@ -85,23 +66,24 @@
 }
 
 .file-drop {
-    border: 2px dashed #808080;
+    border: 2px dashed var(--bleu);
     padding: 24px 12px;
     text-align: center;
     cursor: pointer;
-    color: #404040;
-    background: #fff;
+    color: var(--bleu-fonce);
+    background: var(--bleu-pale);
 }
 
 .file-drop:hover,
 .file-drop.dragover {
-    border-color: #000080;
-    background: #e8eef6;
+    border-color: var(--vert-fonce);
+    background: var(--vert-pale);
+    color: var(--vert-fonce);
 }
 
 .file-drop-hint {
     font-size: 10px;
-    color: #555;
+    color: var(--bleu);
     margin-top: 4px;
 }
 
@@ -112,14 +94,14 @@
 
 .progress-bar {
     height: 6px;
-    background: #808080;
+    background: var(--bleu-clair);
     margin-top: 4px;
-    border: 1px solid #404040;
+    border: 1px solid var(--bleu-fonce);
 }
 
 .progress-bar-fill {
     height: 100%;
-    background: #000080;
+    background: var(--vert);
     width: 0%;
     transition: width 0.2s;
 }
@@ -127,8 +109,8 @@
 .separator-config {
     margin-top: 8px;
     padding: 6px;
-    background: #c0c0c0;
-    border: 1px solid #808080;
+    background: var(--bleu-pale);
+    border: 1px solid var(--bleu-fonce);
 }
 
 .separator-config label {
@@ -136,23 +118,24 @@
     font-weight: bold;
     font-size: 11px;
     margin-bottom: 4px;
+    color: var(--bleu-fonce);
 }
 
 .separator-config input[type="text"] {
     width: 100%;
-    background: #fff;
+    background: #ffffff;
     border: 2px solid;
-    border-top-color: #404040;
-    border-left-color: #404040;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
     padding: 4px 6px;
     font-family: "Courier New", monospace;
     font-size: 12px;
 }
 
 .separator-config .hint {
-    color: #404040;
+    color: var(--bleu);
     font-size: 10px;
     margin-top: 4px;
 }
@@ -166,6 +149,7 @@
 
 #extract-status {
     font-size: 11px;
+    color: var(--bleu-fonce);
 }
 
 /* === Cartes des exercices extraits === */
@@ -181,18 +165,15 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-height: 600px;
+    max-height: 400px;
     overflow-y: auto;
 }
 
 .ex-card {
-    background: #fff;
-    border: 2px solid;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #404040;
-    border-bottom-color: #404040;
+    background: #ffffff;
+    border: 2px solid var(--bleu-fonce);
     padding: 8px;
+    box-shadow: 2px 2px 0 var(--bleu-clair);
 }
 
 .ex-card.unselected {
@@ -213,13 +194,14 @@
 .ex-card-header .ex-num {
     font-weight: bold;
     font-size: 12px;
+    color: var(--bleu-fonce);
 }
 
 .ex-card-header .ex-delete {
     margin-left: auto;
     background: none;
     border: none;
-    color: #800000;
+    color: #990000;
     cursor: pointer;
     font-size: 14px;
     font-weight: bold;
@@ -227,7 +209,7 @@
 }
 
 .ex-card-header .ex-delete:hover {
-    color: #c00000;
+    color: #cc0000;
 }
 
 .ex-card-body {
@@ -240,18 +222,19 @@
     font-weight: bold;
     font-size: 11px;
     margin-top: 4px;
+    color: var(--vert-fonce);
 }
 
 .ex-card-body input[type="text"],
 .ex-card-body input[type="number"],
 .ex-card-body textarea,
 .ex-card-body select {
-    background: #fff;
+    background: #ffffff;
     border: 2px solid;
-    border-top-color: #404040;
-    border-left-color: #404040;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
     padding: 4px 6px;
     font-family: "Courier New", monospace;
     font-size: 11px;
@@ -278,7 +261,7 @@
 
 .opt {
     font-weight: normal;
-    color: #555;
+    color: var(--bleu);
 }
 
 /* Tags de thèmes dans les cartes */
@@ -291,34 +274,35 @@
 }
 
 .theme-tag {
-    background: #e8eef6;
-    border: 1px solid #000080;
+    background: var(--vert-pale);
+    border: 1px solid var(--vert-fonce);
     padding: 1px 4px 1px 6px;
     font-size: 10px;
     display: inline-flex;
     align-items: center;
     gap: 3px;
+    color: var(--vert-fonce);
 }
 
 .theme-tag .remove-tag {
     cursor: pointer;
-    color: #555;
+    color: var(--bleu-fonce);
     font-weight: bold;
     line-height: 1;
 }
 
 .theme-tag .remove-tag:hover {
-    color: #c00000;
+    color: #cc0000;
 }
 
 .theme-add select {
     width: 100%;
     border: 2px solid;
-    border-top-color: #404040;
-    border-left-color: #404040;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
-    background: #fff;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
+    background: #ffffff;
     font-size: 10px;
     padding: 2px 4px;
 }
@@ -326,7 +310,7 @@
 .empty-state {
     text-align: center;
     padding: 24px;
-    color: #555;
+    color: var(--bleu);
     font-size: 11px;
 }
 
@@ -336,24 +320,25 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 400px;
+    max-height: 300px;
     overflow-y: auto;
 }
 
 .exercise-item {
-    background: #fff;
-    border: 1px solid #808080;
+    background: #ffffff;
+    border: 1px solid var(--bleu-fonce);
     padding: 8px;
 }
 
 .exercise-item h3 {
     margin: 0 0 4px 0;
     font-size: 12px;
+    color: var(--bleu-fonce);
 }
 
 .exercise-item .meta {
     font-size: 10px;
-    color: #555;
+    color: var(--bleu);
     margin-bottom: 4px;
 }
 
@@ -363,8 +348,8 @@
 }
 
 .exercise-item .correction-block {
-    background: #e8e8f8;
-    border: 1px solid #000080;
+    background: var(--vert-pale);
+    border: 1px solid var(--vert-fonce);
     padding: 4px 6px;
     margin-top: 4px;
     font-size: 11px;
@@ -378,13 +363,76 @@
 }
 
 .exercise-item .tag {
-    background: #e8eef6;
-    border: 1px solid #000080;
+    background: var(--bleu-pale);
+    border: 1px solid var(--bleu-fonce);
     padding: 1px 6px;
     font-size: 10px;
+    color: var(--bleu-fonce);
 }
 
 button.primary {
     font-weight: bold;
-    background: #c0c0c0;
+    background: linear-gradient(180deg, var(--vert-pale) 0%, var(--vert-clair) 100%);
+    color: var(--vert-fonce);
+    border-color: var(--vert-fonce);
+}
+
+/* === Formulaire d'édition (admin) === */
+
+.edit-exercise-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+}
+
+.delete-exercise-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    color: #990000;
+    border-color: #990000;
+}
+
+.delete-exercise-btn:hover {
+    background: #f4d4d4;
+}
+
+.delete-exercise-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.edit-form {
+    margin-top: 8px;
+    padding: 10px;
+    background: var(--bleu-pale);
+    border: 2px solid var(--bleu-fonce);
+}
+
+.edit-form label {
+    display: block;
+    font-weight: bold;
+    font-size: 11px;
+    margin-top: 6px;
+    margin-bottom: 3px;
+    color: var(--bleu-fonce);
+}
+
+.edit-form input[type="text"],
+.edit-form input[type="number"],
+.edit-form textarea,
+.edit-form select {
+    width: 100%;
+    background: #ffffff;
+    border: 2px solid;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+}
+
+.edit-form .ex-card-row {
+    margin-top: 6px;
 }

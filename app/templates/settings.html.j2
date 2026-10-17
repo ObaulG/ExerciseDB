@@ -11,58 +11,72 @@
     <script defer src="/static/js/settings.js"></script>
 </head>
 <body>
-    <header class="site-header">
-        {% include "_header.html.j2" %}
+    <header class="site-banner">
+        <h1>Assistant Maths</h1>
+        <div class="site-tagline">Évaluateur de réponses &amp; base d'exercices</div>
     </header>
 
-    <nav class="retro-nav">
-        <a href="/" class="retro-btn">💬 Chat</a>
-        <a href="/exercises" class="retro-btn">📚 Exercices</a>
-        <a href="/settings" class="retro-btn">⚙️ Paramètres</a>
-    </nav>
-
-    <div class="window" id="settings-window">
-        <div class="title-bar">
-            <div class="title-bar-controls">
-                <button aria-label="Minimize"></button>
-                <button aria-label="Maximize"></button>
-                <button aria-label="Close"></button>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">Menu</div>
+            <div class="sidebar-auth">
+                {% include "_header.html.j2" %}
             </div>
-            <h1 class="title-bar-text">⚙️ Paramètres — Clé API Mistral</h1>
-        </div>
+            <nav class="sidebar-nav">
+                <a href="/">💬 Chat</a>
+                <a href="/exercises">📚 Exercices</a>
+                <a href="/training">✏️ Entraînement</a>
+                <a href="/settings" class="active">⚙️ Paramètres</a>
+                <a href="/profile">👤 Profil</a>
+            </nav>
+        </aside>
 
-        <div class="window-body">
-            <p class="settings-intro">
-                Renseignez votre clé API Mistral pour utiliser le chatbot et l'agent d'extraction.
-                La clé est stockée <strong>uniquement dans votre navigateur</strong> (localStorage)
-                et envoyée à chaque requête. Elle n'est jamais enregistrée sur le serveur.
-            </p>
+        <main class="content">
+            <div class="content-header">
+                <h1>⚙️ Paramètres</h1>
+            </div>
 
-            <p class="settings-help">
-                Obtenir une clé : <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener">console.mistral.ai/api-keys</a>
-            </p>
+            <div class="content-body">
+                <div class="window" id="settings-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">⚙️ Clé API Mistral</h2>
+                    </div>
 
-            <form id="api-key-form">
-                <label for="api-key-input">Clé API Mistral</label>
-                <input type="password" id="api-key-input"
-                       placeholder="ex: abc123def456..."
-                       autocomplete="off">
+                    <div class="window-body">
+                        <p class="settings-intro">
+                            Renseignez votre clé API Mistral pour utiliser le chatbot et l'agent d'extraction.
+                            La clé est stockée <strong>uniquement dans votre navigateur</strong> (localStorage)
+                            et envoyée à chaque requête. Elle n'est jamais enregistrée sur le serveur.
+                        </p>
 
-                <div class="settings-actions">
-                    <button type="submit" class="retro-btn primary">💾 Enregistrer</button>
-                    <button type="button" class="retro-btn" id="clear-key-btn">🗑 Effacer la clé</button>
-                    <button type="button" class="retro-btn" id="test-key-btn">🔍 Tester la clé</button>
+                        <p class="settings-help">
+                            Obtenir une clé : <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener">console.mistral.ai/api-keys</a>
+                        </p>
+
+                        <form id="api-key-form">
+                            <label for="api-key-input">Clé API Mistral</label>
+                            <input type="password" id="api-key-input"
+                                   placeholder="ex: abc123def456..."
+                                   autocomplete="off">
+
+                            <div class="settings-actions">
+                                <button type="submit" class="retro-btn primary">💾 Enregistrer</button>
+                                <button type="button" class="retro-btn" id="clear-key-btn">🗑 Effacer la clé</button>
+                                <button type="button" class="retro-btn" id="test-key-btn">🔍 Tester la clé</button>
+                            </div>
+                            <span id="key-status"></span>
+                        </form>
+
+                        <div id="key-test-result"></div>
+                    </div>
+
+                    <div class="status-bar">
+                        <span class="status-field" id="key-saved-status">Aucune clé enregistrée</span>
+                        <span class="status-field">v1.0</span>
+                    </div>
                 </div>
-                <span id="key-status"></span>
-            </form>
-
-            <div id="key-test-result"></div>
-        </div>
-
-        <div class="status-bar">
-            <span class="status-field" id="key-saved-status">Aucune clé enregistrée</span>
-            <span class="status-field">v1.0</span>
-        </div>
+            </div>
+        </main>
     </div>
 </body>
 </html>

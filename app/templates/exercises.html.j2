@@ -20,116 +20,113 @@
     <script defer src="/static/js/exercises.js"></script>
 </head>
 <body>
-    <header class="site-header">
-        {% include "_header.html.j2" %}
+    <header class="site-banner">
+        <h1>Assistant Maths</h1>
+        <div class="site-tagline">Évaluateur de réponses &amp; base d'exercices</div>
     </header>
 
-    <nav class="retro-nav">
-        <a href="/" class="retro-btn">💬 Chat</a>
-        <a href="/exercises" class="retro-btn">📚 Exercices</a>
-        <a href="/settings" class="retro-btn">⚙️ Paramètres</a>
-    </nav>
-
-    <!-- === Zone d'extraction === -->
-    <div class="window" id="extract-window">
-        <div class="title-bar">
-            <div class="title-bar-controls">
-                <button aria-label="Minimize"></button>
-                <button aria-label="Maximize"></button>
-                <button aria-label="Close"></button>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">Menu</div>
+            <div class="sidebar-auth">
+                {% include "_header.html.j2" %}
             </div>
-            <h1 class="title-bar-text">📥 Extraction d'exercices</h1>
-        </div>
+            <nav class="sidebar-nav">
+                <a href="/">💬 Chat</a>
+                <a href="/exercises" class="active">📚 Exercices</a>
+                <a href="/training">✏️ Entraînement</a>
+                <a href="/settings">⚙️ Paramètres</a>
+                <a href="/profile">👤 Profil</a>
+            </nav>
+        </aside>
 
-        <div class="window-body">
-            <div class="mode-tabs">
-                <button class="retro-btn mode-tab active" data-mode="parser">🔧 Parser</button>
-                <button class="retro-btn mode-tab" data-mode="agent">🤖 Agent LLM</button>
+        <main class="content">
+            <div class="content-header">
+                <h1>📚 Import d'exercices</h1>
             </div>
 
-            <div class="extract-tabs">
-                <button class="retro-btn extract-tab active" data-tab="text">Texte brut</button>
-                <button class="retro-btn extract-tab" data-tab="pdf">Fichier PDF</button>
-            </div>
+            <div class="content-body">
+                <!-- === Zone d'extraction === -->
+                <div class="window" id="extract-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">📥 Extraction d'exercices</h2>
+                    </div>
 
-            <div id="extract-text" class="extract-panel active">
-                <textarea id="raw-text" rows="6"
-                          placeholder="Collez ici votre texte, LaTeX, Typst...&#10;&#10;Exemple:&#10;Exercice 1. Calculer 3 + 5.&#10;Exercice 2: Démontrer que..."></textarea>
-            </div>
+                    <div class="window-body">
+                        <div class="mode-tabs">
+                            <button class="retro-btn mode-tab active" data-mode="parser">🔧 Parser</button>
+                            <button class="retro-btn mode-tab" data-mode="agent">🤖 Agent LLM</button>
+                        </div>
 
-            <div id="extract-pdf" class="extract-panel">
-                <div class="file-drop" id="file-drop">
-                    <p><strong>Cliquez ou glissez un PDF ici</strong></p>
-                    <p class="file-drop-hint">Extraction locale dans le navigateur</p>
-                    <input type="file" id="pdf-file" accept="application/pdf" hidden>
+                        <div class="extract-tabs">
+                            <button class="retro-btn extract-tab active" data-tab="text">Texte brut</button>
+                            <button class="retro-btn extract-tab" data-tab="pdf">Fichier PDF</button>
+                        </div>
+
+                        <div id="extract-text" class="extract-panel active">
+                            <textarea id="raw-text" rows="6"
+                                      placeholder="Collez ici votre code LaTeX utilisant le package exercise...&#10;&#10;Exemple :&#10;\begin{Exercise}[Calcul de base]&#10;  Calculer $3 + 5$.&#10;  \begin{Answer}&#10;    $3 + 5 = 8$.&#10;  \end{Answer}&#10;\end{Exercise}&#10;&#10;\begin{Exercise}[Démonstration]&#10;  Démontrer que $\sqrt{2}$ est irrationnel.&#10;\end{Exercise}&#10;&#10;Les réponses (Answer) peuvent aussi apparaître plus loin dans le document."></textarea>
+                        </div>
+
+                        <div id="extract-pdf" class="extract-panel">
+                            <div class="file-drop" id="file-drop">
+                                <p><strong>Cliquez ou glissez un PDF ici</strong></p>
+                                <p class="file-drop-hint">Extraction locale dans le navigateur</p>
+                                <input type="file" id="pdf-file" accept="application/pdf" hidden>
+                            </div>
+                            <div id="pdf-status"></div>
+                        </div>
+
+                        <div class="extract-actions">
+                            <button type="button" class="retro-btn primary" id="extract-btn">Extraire les exercices</button>
+                            <span id="extract-status"></span>
+                        </div>
+                    </div>
                 </div>
-                <div id="pdf-status"></div>
+
+                <!-- === Cartes des exercices extraits === -->
+                <div class="window" id="cards-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">📋 Exercices extraits (<span id="extracted-count">0</span>)</h2>
+                    </div>
+
+                    <div class="window-body">
+                        <div class="cards-actions">
+                            <button type="button" class="retro-btn" id="add-card-btn">+ Ajouter un exercice</button>
+                            <button type="button" class="retro-btn" id="select-all-btn">Tout sélectionner</button>
+                            <button type="button" class="retro-btn" id="deselect-all-btn">Tout désélectionner</button>
+                            <button type="button" class="retro-btn" id="clear-cards-btn">Tout effacer</button>
+                            <button type="button" class="retro-btn primary" id="save-all-btn">💾 Valider et envoyer (<span id="selected-count">0</span>)</button>
+                        </div>
+                        <div id="cards-container"></div>
+                        <div id="empty-state" class="empty-state">Aucun exercice. Importez une source et cliquez sur « Extraire ».</div>
+                    </div>
+
+                    <div class="status-bar">
+                        <span class="status-field" id="save-status">Prêt</span>
+                        <span class="status-field" id="saved-count">0 enregistré(s)</span>
+                        <span class="status-field">KaTeX + LaTeX</span>
+                    </div>
+                </div>
+
+                <!-- === Liste des exercices enregistrés === -->
+                <div class="window" id="list-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">📚 Exercices enregistrés</h2>
+                    </div>
+
+                    <div class="window-body">
+                        <div id="exercise-list"></div>
+                    </div>
+
+                    <div class="status-bar">
+                        <span class="status-field">Prêt</span>
+                        <span class="status-field" id="exercise-count">0 exercice(s)</span>
+                        <span class="status-field">KaTeX + LaTeX</span>
+                    </div>
+                </div>
             </div>
-
-            <div class="separator-config" id="separator-config">
-                <label for="separator-input">Séparateur d'exercices (optionnel)</label>
-                <input type="text" id="separator-input"
-                       placeholder="ex: Exercice, \begin{exercice}, # Exo, ===">
-                <div class="hint">Si vide, détection auto de « Exercice N », « Ex N », « \begin{exercice} », etc.</div>
-            </div>
-
-            <div class="extract-actions">
-                <button type="button" class="retro-btn primary" id="extract-btn">Extraire les exercices</button>
-                <span id="extract-status"></span>
-            </div>
-        </div>
-    </div>
-
-    <!-- === Cartes des exercices extraits === -->
-    <div class="window" id="cards-window">
-        <div class="title-bar">
-            <div class="title-bar-controls">
-                <button aria-label="Minimize"></button>
-                <button aria-label="Maximize"></button>
-                <button aria-label="Close"></button>
-            </div>
-            <h1 class="title-bar-text">📋 Exercices extraits (<span id="extracted-count">0</span>)</h1>
-        </div>
-
-        <div class="window-body">
-            <div class="cards-actions">
-                <button type="button" class="retro-btn" id="add-card-btn">+ Ajouter un exercice</button>
-                <button type="button" class="retro-btn" id="select-all-btn">Tout sélectionner</button>
-                <button type="button" class="retro-btn" id="deselect-all-btn">Tout désélectionner</button>
-                <button type="button" class="retro-btn" id="clear-cards-btn">Tout effacer</button>
-                <button type="button" class="retro-btn primary" id="save-all-btn">💾 Valider et envoyer (<span id="selected-count">0</span>)</button>
-            </div>
-            <div id="cards-container"></div>
-            <div id="empty-state" class="empty-state">Aucun exercice. Importez une source et cliquez sur « Extraire ».</div>
-        </div>
-
-        <div class="status-bar">
-            <span class="status-field" id="save-status">Prêt</span>
-            <span class="status-field" id="saved-count">0 enregistré(s)</span>
-            <span class="status-field">KaTeX + LaTeX</span>
-        </div>
-    </div>
-
-    <!-- === Liste des exercices enregistrés === -->
-    <div class="window" id="list-window">
-        <div class="title-bar">
-            <div class="title-bar-controls">
-                <button aria-label="Minimize"></button>
-                <button aria-label="Maximize"></button>
-                <button aria-label="Close"></button>
-            </div>
-            <h1 class="title-bar-text">📚 Exercices enregistrés</h1>
-        </div>
-
-        <div class="window-body">
-            <div id="exercise-list"></div>
-        </div>
-
-        <div class="status-bar">
-            <span class="status-field">Prêt</span>
-            <span class="status-field" id="exercise-count">0 exercice(s)</span>
-            <span class="status-field">KaTeX + LaTeX</span>
-        </div>
+        </main>
     </div>
 </body>
 </html>

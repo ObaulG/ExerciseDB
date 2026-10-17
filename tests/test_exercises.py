@@ -82,3 +82,46 @@ def test_extract_accepts_api_key_header(client):
     )
     # Soit 200 (la clé d'environnement prend le relais), soit 502/503 (erreur LLM)
     assert response.status_code in (200, 502, 503)
+
+
+def _create_admin_client(client):
+    """Crée un utilisateur admin en base et retourne un client authentifié."""
+    from app.database import db
+
+    with db.get_connection() as conn:
+        conn.execute('INSERT INTO "user" (pseudo, password_hash, is_admin) VALUES (%s, %s, %s)',
+                     ("admin", "fake-hash", True))
+    # Pas de mot de passe valide : on injecte directement le cookie de session.
+    from app import auth
+
+    with db.get_connection() as conn:
+        row = conn.execute('SELECT id FROM "user" WHERE pseudo = %s', ("admin",)).fetchone()
+    token = auth.create_session(row["id"])
+    client.cookies.set(auth.SESSION_COOKIE, token)
+    return client
+
+
+def test_delete_exercise_as_admin(client):
+    client.post("/api/exercises", json={"name": "À supprimer", "text": "Énoncé", "corrections": []})
+    exercise_id = client.get("/api/exercises").json()[0]["id"]
+
+    _create_admin_client(client)
+    response = client.delete(f"/api/exercises/{exercise_id}")
+    assert response.status_code == 200
+    assert response.json()["status"] == "deleted"
+    assert client.get(f"/api/exercises/{exercise_id}").status_code == 404
+
+
+def test_delete_exercise_forbidden_without_admin(client):
+    client.post("/api/exercises", json={"name": "À garder", "text": "Énoncé", "corrections": []})
+    exercise_id = client.get("/api/exercises").json()[0]["id"]
+
+    response = client.delete(f"/api/exercises/{exercise_id}")
+    assert response.status_code == 403
+    # L'exercice doit toujours exister
+    assert client.get(f"/api/exercises/{exercise_id}").status_code == 200
+
+
+def test_delete_exercise_not_found_as_admin(client):
+    _create_admin_client(client)
+    assert client.delete("/api/exercises/999").status_code == 404

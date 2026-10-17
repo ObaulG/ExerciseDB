@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Maths — Entraînement</title>
+    <link rel="stylesheet" href="/static/css/retro.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <link rel="stylesheet" href="/static/css/training.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script defer src="/static/js/auth.js"></script>
+    <script defer src="/static/js/training.js"></script>
+</head>
+<body>
+    <header class="site-banner">
+        <h1>Assistant Maths</h1>
+        <div class="site-tagline">Évaluateur de réponses &amp; base d'exercices</div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">Menu</div>
+            <div class="sidebar-auth">
+                {% include "_header.html.j2" %}
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">💬 Chat</a>
+                <a href="/exercises">📚 Exercices</a>
+                <a href="/training" class="active">✏️ Entraînement</a>
+                <a href="/settings">⚙️ Paramètres</a>
+                <a href="/profile">👤 Profil</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="content-header">
+                <h1>✏️ Entraînement</h1>
+            </div>
+
+            <div class="content-body">
+                <!-- === Zone 1 : Recherche d'exercices === -->
+                <div class="window" id="search-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">🔍 Rechercher des exercices</h2>
+                    </div>
+                    <div class="window-body">
+                        <form id="search-form" class="search-form">
+                            <div class="search-row">
+                                <input type="text" id="search-query" placeholder="Titre ou mot-clé...">
+                                <select id="search-type">
+                                    <option value="">Tous les types</option>
+                                </select>
+                                <select id="search-niveau">
+                                    <option value="">Tous les niveaux</option>
+                                </select>
+                                <select id="search-theme">
+                                    <option value="">Tous les thèmes</option>
+                                </select>
+                                <button type="submit" class="retro-btn primary">Rechercher</button>
+                            </div>
+                        </form>
+                        <div id="search-results" class="search-results">
+                            <p class="search-hint">Lancez une recherche pour trouver des exercices.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === Zone 2 : Exercices sélectionnés === -->
+                <div class="window" id="selection-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">📋 Exercices sélectionnés (<span id="selection-count">0</span>/6)</h2>
+                    </div>
+                    <div class="window-body">
+                        <div id="selection-list" class="selection-list">
+                            <p class="selection-hint">Aucun exercice sélectionné. Utilisez la recherche ci-dessus.</p>
+                        </div>
+                        <div class="selection-actions">
+                            <button type="button" class="retro-btn primary" id="validate-selection-btn" disabled>Valider la sélection</button>
+                            <button type="button" class="retro-btn" id="clear-selection-btn">Tout désélectionner</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === Zone 3 : Travail sur les exercices === -->
+                <div class="window" id="work-window" style="display:none">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">✏️ Répondre aux exercices</h2>
+                    </div>
+                    <div class="window-body">
+                        <div id="work-container"></div>
+                        <div class="work-actions">
+                            <button type="button" class="retro-btn primary" id="submit-answers-btn">Envoyer mes réponses</button>
+                            <span id="submit-status"></span>
+                        </div>
+                        <div id="results-container"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

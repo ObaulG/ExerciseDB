@@ -1,7 +1,7 @@
 import os
 
 import instructor
-from mistralai import Mistral
+from mistralai.client import Mistral
 
 from atomic_agents.agents.atomic_agent import AgentConfig, AtomicAgent, ChatHistory, SystemPromptGenerator
 
@@ -49,7 +49,17 @@ def _build_agent(api_key: str | None) -> AtomicAgent:
 
 
 def evaluate_answer(
-    problem: str, student_answer: str, api_key: str | None = None
+    problem: str,
+    student_answer: str,
+    api_key: str | None = None,
+    reference_correction: str | None = None,
 ) -> MathAnswerEvaluationSchema:
     agent = _build_agent(api_key)
-    return agent.run(ProblemInputSchema(problem=problem, student_answer=student_answer))
+    full_problem = problem
+    if reference_correction and reference_correction.strip():
+        full_problem = (
+            problem
+            + "\n\n--- Corrigé de référence (utilise-le comme solution de référence pour ton évaluation) ---\n"
+            + reference_correction.strip()
+        )
+    return agent.run(ProblemInputSchema(problem=full_problem, student_answer=student_answer))

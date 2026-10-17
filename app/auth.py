@@ -39,12 +39,12 @@ def create_user(pseudo: str, password: str) -> int:
 def authenticate(pseudo: str, password: str) -> dict | None:
     with db.get_connection() as conn:
         row = conn.execute(
-            'SELECT id, pseudo, password_hash FROM "user" WHERE LOWER(pseudo) = LOWER(%s)',
+            'SELECT id, pseudo, password_hash, is_admin FROM "user" WHERE LOWER(pseudo) = LOWER(%s)',
             (pseudo,),
         ).fetchone()
         if row is None or not verify_password(password, row["password_hash"]):
             return None
-        return {"id": row["id"], "pseudo": row["pseudo"]}
+        return {"id": row["id"], "pseudo": row["pseudo"], "is_admin": row["is_admin"]}
 
 
 def create_session(user_id: int) -> str:
@@ -68,7 +68,9 @@ def get_current_user(request: Request) -> dict | None:
         return None
     with db.get_connection() as conn:
         row = conn.execute(
-            'SELECT u.id, u.pseudo FROM "user" u JOIN session s ON s.user_id = u.id WHERE s.token = %s',
+            'SELECT u.id, u.pseudo, u.is_admin FROM "user" u JOIN session s ON s.user_id = u.id WHERE s.token = %s',
             (token,),
         ).fetchone()
-        return {"id": row["id"], "pseudo": row["pseudo"]} if row else None
+        if row is None:
+            return None
+        return {"id": row["id"], "pseudo": row["pseudo"], "is_admin": row["is_admin"]}

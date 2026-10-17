@@ -3,7 +3,7 @@ uvicorn[standard]
 jinja2
 python-dotenv
 atomic-agents
-instructor
-mistralai<2
+instructor==1.14.5
+mistralai==2.4.0
 psycopg[binary,pool]
 pgserver

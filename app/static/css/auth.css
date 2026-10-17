@@ -1,8 +1,8 @@
-.site-header {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 10;
+/* === Header d'authentification (dans la barre de contenu) === */
+.auth-zone {
+    display: flex;
+    gap: 6px;
+    align-items: center;
 }
 
 .auth-form {
@@ -13,19 +13,19 @@
 
 .auth-form input {
     width: 110px;
-    background: #fff;
+    background: #ffffff;
     border: 2px solid;
-    border-top-color: #404040;
-    border-left-color: #404040;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
     padding: 3px 6px;
     font-family: inherit;
     font-size: 11px;
 }
 
 #auth-error {
-    color: #a00;
+    color: #990000;
     font-size: 11px;
     max-width: 200px;
 }
@@ -34,17 +34,13 @@
     display: flex;
     gap: 6px;
     align-items: center;
-    background: #c0c0c0;
-    border: 2px solid;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #404040;
-    border-bottom-color: #404040;
+    background: var(--vert-pale);
+    border: 2px solid var(--vert-fonce);
     padding: 3px 6px;
 }
 
 .user-zone a {
-    color: #000;
+    color: var(--vert-fonce);
     font-weight: bold;
     text-decoration: underline;
     font-size: 12px;
