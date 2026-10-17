@@ -3,4 +3,4 @@ uvicorn[standard]
 jinja2
 atomic-agents
 instructor
-mistralai
+mistralai==1.2.0
