@@ -1,5 +1,6 @@
 import os
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,8 @@ from app.routes import router as api_router
 
 app = FastAPI(title="Assistant Maths")
 
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
@@ -20,6 +23,7 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 _database_url = os.environ.get("DATABASE_URL", "").strip()
 if _database_url:
     db.configure(_database_url)
+    print("tentative de connexion à la DB Supabase...")
     db.init_db()
 
 app.include_router(api_router)
@@ -50,3 +54,9 @@ async def settings_page(request: Request):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

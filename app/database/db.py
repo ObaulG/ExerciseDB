@@ -1,5 +1,7 @@
 from pathlib import Path
-
+from psycopg import connect
+from psycopg.rows import dict_row
+from os import getenv
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
 DATABASE_URL: str | None = None
@@ -32,16 +34,17 @@ def configure(database_url: str) -> None:
 
 
 def get_connection():
-    """Contexte de connexion PostgreSQL (Supabase) emprunté au pool psycopg.
-
-    La connexion est rendue au pool à la sortie du bloc ``with``.
-    """
-    if not DATABASE_URL:
-        raise RuntimeError(
-            "DATABASE_URL n'est pas configurée. "
-            "Définissez-la avec l'URI de connexion de votre projet Supabase."
-        )
-    return _get_pool().connection()
+    conn = connect(
+        host=getenv("SUPABASE_HOST"),
+        port=6543,
+        dbname="postgres",
+        user="postgres",
+        password=getenv("SUPABASE_PW"),
+        sslmode="require",
+        row_factory=dict_row,
+    )
+    conn.autocommit = True
+    return conn
 
 
 def init_db() -> None:
