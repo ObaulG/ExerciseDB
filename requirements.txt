@@ -2,8 +2,8 @@ fastapi==0.141.1
 uvicorn[standard]
 jinja2
 python-dotenv==1.2.4
-atomic-agents==2.12.0
+atomic-agents==2.7.5
 instructor==1.14.5
-mistralai==2.4.0
+mistralai==1.12.4
 psycopg[binary,pool]
 pgserver

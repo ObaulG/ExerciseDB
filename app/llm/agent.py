@@ -1,7 +1,7 @@
 import os
 
 import instructor
-from mistralai.client import Mistral
+from mistralai import Mistral
 
 from atomic_agents.agents.atomic_agent import AgentConfig, AtomicAgent, ChatHistory, SystemPromptGenerator
 
