@@ -194,6 +194,37 @@ body {
     padding-left: 10px;
 }
 
+/* --- Groupe de navigation (sous-liens Exercices) --- */
+
+.sidebar-nav .nav-group {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-nav .nav-group-title {
+    display: block;
+    padding: 6px 14px 2px 14px;
+    color: #ffffcc;
+    font-size: 13px;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #000;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-nav .nav-group a {
+    padding: 5px 14px 5px 24px;
+    font-size: 12px;
+    font-weight: normal;
+    border-top: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-nav .nav-group a:last-child {
+    border-bottom: none;
+}
+
 .sidebar-footer {
     margin-top: auto;
     padding: 6px;

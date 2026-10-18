@@ -4,7 +4,9 @@ from typing import Annotated
 
 from app import auth
 from app.database import db
+from app.llm.edit_agent import edit_exercise
 from app.llm.extraction_agent import extract_exercises
+from app.llm.schemas import ExerciseEditInputSchema
 
 router = APIRouter(prefix="/api/exercises", tags=["exercises"])
 
@@ -25,6 +27,24 @@ class ExerciseIn(BaseModel):
 
 class ExtractionRequest(BaseModel):
     raw_text: str = Field(..., min_length=1, description="Texte brut contenant des exercices à extraire.")
+
+
+class AIEditRequest(BaseModel):
+    name: str = Field(default="", description="Titre actuel de l'exercice.")
+    text: str = Field(default="", description="Énoncé actuel de l'exercice (LaTeX autorisé).")
+    type: str | None = Field(default=None, description="Type actuel de l'exercice.")
+    niveau: str | None = Field(default=None, description="Niveau scolaire actuel.")
+    temps_estime: int | None = Field(default=None, ge=0, description="Temps estimé actuel en minutes.")
+    themes: list[str] = Field(default_factory=list, description="Thèmes actuels associés.")
+    corrections: list[str] = Field(
+        default_factory=list,
+        description="Corrigés actuels (un texte par entrée).",
+    )
+    instruction: str = Field(
+        ...,
+        min_length=1,
+        description="Instruction en français : ce que l'utilisateur veut modifier, compléter ou générer.",
+    )
 
 
 @router.post("/extract")
@@ -52,6 +72,55 @@ async def extract(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Erreur lors de l'extraction LLM : {exc}") from exc
+
+
+@router.post("/ai-edit")
+async def ai_edit(
+    payload: AIEditRequest,
+    x_mistral_api_key: Annotated[str | None, Header()] = None,
+) -> dict:
+    """Applique une instruction d'IA à un exercice en cours d'édition.
+
+    Prend en entrée les champs actuels du formulaire + l'instruction de
+    l'utilisateur, et renvoie une nouvelle instance d'exercice modifiée.
+    Aucune écriture en base : l'utilisateur doit relire et appliquer
+    lui-même le résultat au formulaire.
+    """
+    try:
+        result = edit_exercise(
+            ExerciseEditInputSchema(
+                name=payload.name or "",
+                text=payload.text or "",
+                type=payload.type or "",
+                niveau=payload.niveau or "",
+                temps_estime=payload.temps_estime or 0,
+                themes=payload.themes,
+                corrections=payload.corrections,
+                instruction=payload.instruction,
+            ),
+            api_key=x_mistral_api_key,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Erreur lors de l'appel au LLM : {exc}",
+        ) from exc
+
+    ex = result.exercise
+    return {
+        "exercise": {
+            "name": ex.name,
+            "text": ex.text,
+            "type": ex.type,
+            "niveau": ex.niveau,
+            "temps_estime": ex.temps_estime,
+            "themes": ex.themes,
+            "corrections": ex.corrections,
+        },
+        "summary": ex.summary,
+    }
 
 
 @router.post("", status_code=201)

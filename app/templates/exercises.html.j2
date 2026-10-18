@@ -17,6 +17,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
     <script defer src="/static/js/auth.js"></script>
+    <script defer src="/static/js/exercises-shared.js"></script>
     <script defer src="/static/js/exercises.js"></script>
 </head>
 <body>
@@ -33,7 +34,12 @@
             </div>
             <nav class="sidebar-nav">
                 <a href="/">💬 Chat</a>
-                <a href="/exercises" class="active">📚 Exercices</a>
+                <div class="nav-group">
+                    <span class="nav-group-title">📚 Exercices</span>
+                    <a href="/exercises" class="active">📥 Importer</a>
+                    <a href="/browse">👁️ Consulter</a>
+                    <a href="/create">✨ Créer</a>
+                </div>
                 <a href="/training">✏️ Entraînement</a>
                 <a href="/settings">⚙️ Paramètres</a>
                 <a href="/profile">👤 Profil</a>
@@ -105,23 +111,6 @@
                     <div class="status-bar">
                         <span class="status-field" id="save-status">Prêt</span>
                         <span class="status-field" id="saved-count">0 enregistré(s)</span>
-                        <span class="status-field">KaTeX + LaTeX</span>
-                    </div>
-                </div>
-
-                <!-- === Liste des exercices enregistrés === -->
-                <div class="window" id="list-window">
-                    <div class="title-bar">
-                        <h2 class="title-bar-text">📚 Exercices enregistrés</h2>
-                    </div>
-
-                    <div class="window-body">
-                        <div id="exercise-list"></div>
-                    </div>
-
-                    <div class="status-bar">
-                        <span class="status-field">Prêt</span>
-                        <span class="status-field" id="exercise-count">0 exercice(s)</span>
                         <span class="status-field">KaTeX + LaTeX</span>
                     </div>
                 </div>

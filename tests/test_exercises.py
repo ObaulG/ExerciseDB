@@ -64,6 +64,31 @@ def test_exercises_page(client):
     assert "Valider et envoyer" in response.text
     assert "Parser" in response.text
     assert "Agent LLM" in response.text
+    # La page d'import ne contient plus la liste des exercices enregistrés
+    assert "Exercices enregistrés" not in response.text
+
+
+def test_browse_page(client):
+    response = client.get("/browse")
+    assert response.status_code == 200
+    assert "Consulter les exercices" in response.text
+    assert "Exercices enregistrés" in response.text
+    # La page de consultation ne contient pas la zone d'extraction
+    assert "Extraction d'exercices" not in response.text
+    assert "Valider et envoyer" not in response.text
+
+
+def test_nav_group_on_all_pages(client):
+    """Toutes les pages doivent proposer le groupe de navigation Exercices
+    avec les trois sous-liens (Importer, Consulter, Créer)."""
+    for path in ["/", "/exercises", "/browse", "/create", "/training", "/settings", "/profile"]:
+        response = client.get(path)
+        assert response.status_code == 200, f"{path} returned {response.status_code}"
+        text = response.text
+        assert 'href="/exercises"' in text, f"{path} missing Importer link"
+        assert 'href="/browse"' in text, f"{path} missing Consulter link"
+        assert 'href="/create"' in text, f"{path} missing Créer link"
+        assert "nav-group" in text, f"{path} missing nav-group"
 
 
 def test_settings_page(client):
@@ -125,3 +150,67 @@ def test_delete_exercise_forbidden_without_admin(client):
 def test_delete_exercise_not_found_as_admin(client):
     _create_admin_client(client)
     assert client.delete("/api/exercises/999").status_code == 404
+
+
+def test_create_page(client):
+    response = client.get("/create")
+    assert response.status_code == 200
+    assert "Créer un exercice" in response.text
+    assert "Assistant IA" in response.text
+    assert "Aperçu du rendu" in response.text
+    # Le lien de navigation doit pointer vers /create
+    assert 'href="/create"' in response.text
+
+
+def test_ai_edit_accepts_api_key_header(client):
+    """L'endpoint /api/exercises/ai-edit doit accepter l'en-tête X-Mistral-API-Key
+    et valider le payload sans erreur de schéma."""
+    response = client.post(
+        "/api/exercises/ai-edit",
+        json={
+            "name": "Test",
+            "text": "Calculer $2+2$.",
+            "type": None,
+            "niveau": None,
+            "temps_estime": None,
+            "themes": [],
+            "corrections": [],
+            "instruction": "Rédige un corrigé.",
+        },
+        headers={"X-Mistral-API-Key": "fake-key-for-validation-test"},
+    )
+    # Soit 200 (la clé d'environnement prend le relais), soit 502/503 (erreur LLM)
+    assert response.status_code in (200, 502, 503)
+
+
+def test_ai_edit_rejects_empty_instruction(client):
+    """Une instruction vide doit être rejetée par validation Pydantic (422)."""
+    response = client.post(
+        "/api/exercises/ai-edit",
+        json={
+            "name": "Test",
+            "text": "Calculer $2+2$.",
+            "instruction": "",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_ai_edit_does_not_write_to_db(client):
+    """L'endpoint ai-edit ne doit jamais écrire en base, même si l'IA répond."""
+    from app.database import db
+
+    before = len(db.list_exercises())
+    # On tente l'appel ; peu importe le code de retour (200/502/503),
+    # la base ne doit pas changer.
+    client.post(
+        "/api/exercises/ai-edit",
+        json={
+            "name": "Ne pas enregistrer",
+            "text": "Énoncé test.",
+            "instruction": "Ne change rien.",
+        },
+        headers={"X-Mistral-API-Key": "fake-key-for-validation-test"},
+    )
+    after = len(db.list_exercises())
+    assert before == after

@@ -121,3 +121,52 @@ class CorrectionGenerationOutputSchema(BaseIOSchema):
         ...,
         description="Corrigé complet et détaillé de l'exercice, avec toutes les étapes de résolution, en LaTeX balisé si nécessaire.",
     )
+
+
+class ExerciseEditInputSchema(BaseIOSchema):
+    """Entrée soumise à l'agent d'édition d'exercice : l'exercice courant
+    et l'instruction de modification formulée par l'utilisateur."""
+
+    name: str = Field(default="", description="Titre actuel de l'exercice, éventuellement vide.")
+    text: str = Field(default="", description="Énoncé actuel de l'exercice, en LaTeX balisé si nécessaire.")
+    type: str = Field(default="", description="Type actuel de l'exercice.")
+    niveau: str = Field(default="", description="Niveau scolaire actuel.")
+    temps_estime: int = Field(default=0, ge=0, description="Temps estimé actuel en minutes.")
+    themes: list[str] = Field(default_factory=list, description="Thèmes actuels associés à l'exercice.")
+    corrections: list[str] = Field(
+        default_factory=list,
+        description="Corrigés actuels de l'exercice (un par entrée).",
+    )
+    instruction: str = Field(
+        ...,
+        description="Instruction en français formulée par l'utilisateur : ce qu'il veut modifier, compléter ou générer (énoncé, corrigé, métadonnées, etc.).",
+    )
+
+
+class ExerciseEditOutputItem(BaseIOSchema):
+    """Instance d'exercice modifiée par l'agent LLM. L'utilisateur doit la
+    relire et l'appliquer lui-même au formulaire — aucune écriture en base."""
+
+    name: str = Field(default="", description="Titre proposé pour l'exercice.")
+    text: str = Field(default="", description="Énoncé complet proposé, en LaTeX balisé si nécessaire.")
+    type: str = Field(default="", description="Type proposé parmi la liste de référence.")
+    niveau: str = Field(default="", description="Niveau scolaire proposé parmi la liste de référence.")
+    temps_estime: int = Field(default=0, ge=0, description="Temps estimé proposé en minutes.")
+    themes: list[str] = Field(default_factory=list, description="Thèmes proposés parmi la liste de référence.")
+    corrections: list[str] = Field(
+        default_factory=list,
+        description="Corrigés proposés (un par entrée), en LaTeX balisé si nécessaire.",
+    )
+    summary: str = Field(
+        default="",
+        description="Résumé court en français des modifications effectuées par l'agent.",
+    )
+
+
+class ExerciseEditOutputSchema(BaseIOSchema):
+    """Réponse de l'agent d'édition : une instance d'exercice modifiée."""
+
+    exercise: ExerciseEditOutputItem = Field(
+        ...,
+        description="L'exercice modifié selon l'instruction de l'utilisateur.",
+    )

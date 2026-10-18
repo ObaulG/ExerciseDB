@@ -41,6 +41,16 @@ async def exercises_page(request: Request):
     return templates.TemplateResponse(request, "exercises.html.j2")
 
 
+@app.get("/browse", response_class=HTMLResponse)
+async def browse_page(request: Request):
+    return templates.TemplateResponse(request, "browse.html.j2")
+
+
+@app.get("/create", response_class=HTMLResponse)
+async def create_page(request: Request):
+    return templates.TemplateResponse(request, "create.html.j2")
+
+
 @app.get("/profile", response_class=HTMLResponse)
 async def profile_page(request: Request):
     return templates.TemplateResponse(request, "profile.html.j2")

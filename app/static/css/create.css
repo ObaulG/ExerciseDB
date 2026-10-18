@@ -1,0 +1,247 @@
+/* === Page Créer === */
+
+#form-window,
+#preview-window,
+#ai-window {
+    max-width: 100%;
+    margin-bottom: 12px;
+}
+
+/* --- Formulaire --- */
+
+.create-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.create-form label {
+    font-weight: bold;
+    font-size: 11px;
+    margin-top: 4px;
+    color: var(--vert-fonce);
+}
+
+.create-form input[type="text"],
+.create-form input[type="number"],
+.create-form textarea,
+.create-form select {
+    width: 100%;
+    background: #ffffff;
+    border: 2px solid;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
+    padding: 4px 6px;
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    resize: vertical;
+}
+
+.create-form .ex-card-row {
+    display: flex;
+    gap: 8px;
+}
+
+.create-form .ex-card-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.opt {
+    font-weight: normal;
+    color: var(--bleu);
+}
+
+/* Bloc thèmes réutilise les styles de exercises.css (.theme-tags, .theme-tag, .theme-add) */
+
+#themes-block .theme-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 3px;
+}
+
+#themes-block .theme-add select {
+    width: 100%;
+    border: 2px solid;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
+    background: #ffffff;
+    font-size: 11px;
+    padding: 3px 6px;
+}
+
+.form-actions {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.inline-status {
+    font-size: 11px;
+    color: var(--bleu-fonce);
+}
+
+/* --- Aperçu --- */
+
+.preview-section {
+    margin-bottom: 12px;
+}
+
+.preview-section:last-child {
+    margin-bottom: 0;
+}
+
+.preview-label {
+    font-weight: bold;
+    font-size: 11px;
+    color: var(--vert-fonce);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.preview-content {
+    background: #ffffff;
+    border: 2px solid;
+    border-top-color: var(--bleu-clair);
+    border-left-color: var(--bleu-clair);
+    border-right-color: var(--bleu-fonce);
+    border-bottom-color: var(--bleu-fonce);
+    padding: 8px 10px;
+    min-height: 40px;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: auto;
+}
+
+.preview-content.empty {
+    color: var(--bleu);
+    font-style: italic;
+}
+
+.preview-content.correction {
+    background: var(--vert-pale);
+}
+
+/* --- Assistant IA --- */
+
+.ai-help {
+    font-size: 11px;
+    color: var(--bleu-fonce);
+    background: var(--bleu-pale);
+    border: 1px solid var(--bleu-fonce);
+    padding: 6px 8px;
+    margin: 0 0 8px 0;
+}
+
+#ai-window label {
+    font-weight: bold;
+    font-size: 11px;
+    color: var(--vert-fonce);
+    display: block;
+    margin-bottom: 3px;
+}
+
+#ai-instruction {
+    width: 100%;
+    background: #ffffff;
+    border: 2px solid;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+}
+
+.ai-actions {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ai-result {
+    margin-top: 12px;
+    border: 2px solid var(--vert-fonce);
+    background: var(--vert-pale);
+    padding: 8px;
+}
+
+.ai-result-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.ai-summary {
+    font-size: 11px;
+    color: var(--vert-fonce);
+    font-style: italic;
+}
+
+.ai-diff {
+    background: #ffffff;
+    border: 1px solid var(--bleu-fonce);
+    padding: 6px 8px;
+    font-size: 11px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.ai-diff .diff-field {
+    margin-bottom: 6px;
+}
+
+.ai-diff .diff-field:last-child {
+    margin-bottom: 0;
+}
+
+.ai-diff .diff-label {
+    font-weight: bold;
+    font-size: 10px;
+    color: var(--bleu-fonce);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.ai-diff .diff-value {
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.ai-diff .diff-value.changed {
+    background: #ffffcc;
+    border-left: 3px solid #cc9900;
+    padding-left: 4px;
+}
+
+.ai-result-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+#ai-run-btn:disabled,
+#save-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}

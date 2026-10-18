@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Maths — Créer un exercice</title>
+    <link rel="stylesheet" href="/static/css/retro.css">
+    <link rel="stylesheet" href="/static/css/exercises.css">
+    <link rel="stylesheet" href="/static/css/create.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script defer src="/static/js/auth.js"></script>
+    <script defer src="/static/js/exercises-shared.js"></script>
+    <script defer src="/static/js/create.js"></script>
+</head>
+<body>
+    <header class="site-banner">
+        <h1>Assistant Maths</h1>
+        <div class="site-tagline">Évaluateur de réponses &amp; base d'exercices</div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">Menu</div>
+            <div class="sidebar-auth">
+                {% include "_header.html.j2" %}
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">💬 Chat</a>
+                <div class="nav-group">
+                    <span class="nav-group-title">📚 Exercices</span>
+                    <a href="/exercises">📥 Importer</a>
+                    <a href="/browse">👁️ Consulter</a>
+                    <a href="/create" class="active">✨ Créer</a>
+                </div>
+                <a href="/training">✏️ Entraînement</a>
+                <a href="/settings">⚙️ Paramètres</a>
+                <a href="/profile">👤 Profil</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="content-header">
+                <h1>✨ Créer un exercice</h1>
+            </div>
+
+            <div class="content-body">
+                <!-- === Formulaire d'édition === -->
+                <div class="window" id="form-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">📝 Formulaire</h2>
+                    </div>
+
+                    <div class="window-body">
+                        <div class="create-form" id="create-form">
+                            <label for="f-name">Titre</label>
+                            <input type="text" id="f-name" maxlength="200" placeholder="Titre de l'exercice">
+
+                            <label for="f-text">Énoncé</label>
+                            <textarea id="f-text" rows="6" placeholder="Énoncé de l'exercice (LaTeX autorisé : $...$ / $$...$$)"></textarea>
+
+                            <div class="ex-card-row">
+                                <div class="ex-card-field">
+                                    <label for="f-type">Type</label>
+                                    <select id="f-type"></select>
+                                </div>
+                                <div class="ex-card-field">
+                                    <label for="f-niveau">Niveau</label>
+                                    <select id="f-niveau"></select>
+                                </div>
+                                <div class="ex-card-field">
+                                    <label for="f-temps">Temps <span class="opt">(min)</span></label>
+                                    <input type="number" id="f-temps" min="0" placeholder="—">
+                                </div>
+                            </div>
+
+                            <label>Thèmes</label>
+                            <div id="themes-block"></div>
+
+                            <label for="f-correction">Correction <span class="opt">(optionnel)</span></label>
+                            <textarea id="f-correction" rows="6" placeholder="Texte du corrigé (LaTeX autorisé : $...$ / $$...$$)"></textarea>
+
+                            <div class="form-actions">
+                                <button type="button" class="retro-btn primary" id="save-btn">💾 Enregistrer dans la base</button>
+                                <button type="button" class="retro-btn" id="reset-btn">↺ Réinitialiser</button>
+                                <span id="save-status" class="inline-status"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === Aperçu du rendu === -->
+                <div class="window" id="preview-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">👁️ Aperçu du rendu</h2>
+                    </div>
+
+                    <div class="window-body">
+                        <div class="preview-section">
+                            <div class="preview-label">Énoncé</div>
+                            <div class="preview-content" id="preview-text"></div>
+                        </div>
+                        <div class="preview-section">
+                            <div class="preview-label">Correction</div>
+                            <div class="preview-content" id="preview-correction"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === Assistant IA === -->
+                <div class="window" id="ai-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">🤖 Assistant IA</h2>
+                    </div>
+
+                    <div class="window-body">
+                        <p class="ai-help">
+                            Décris en français ce que tu veux modifier, compléter ou générer
+                            (énoncé, corrigé, métadonnées). L'IA renvoie une proposition
+                            d'exercice complète : <strong>relis-la puis applique-la toi-même</strong>
+                            au formulaire. Rien n'est écrit en base tant que tu ne cliques pas
+                            sur « Enregistrer ».
+                        </p>
+
+                        <label for="ai-instruction">Instruction</label>
+                        <textarea id="ai-instruction" rows="3"
+                                  placeholder="Exemples : « Rédige un corrigé détaillé pour cet énoncé. », « Ajoute une question 2 plus difficile. », « Passe le niveau en 1ère et ajoute le thème Dérivation. »"></textarea>
+
+                        <div class="ai-actions">
+                            <button type="button" class="retro-btn primary" id="ai-run-btn">🤖 Lancer l'IA</button>
+                            <button type="button" class="retro-btn" id="ai-clear-btn">Effacer l'instruction</button>
+                            <span id="ai-status" class="inline-status"></span>
+                        </div>
+
+                        <div id="ai-result" class="ai-result" style="display:none">
+                            <div class="ai-result-header">
+                                <strong>Proposition de l'IA</strong>
+                                <span id="ai-summary" class="ai-summary"></span>
+                            </div>
+                            <div class="ai-diff" id="ai-diff"></div>
+                            <div class="ai-result-actions">
+                                <button type="button" class="retro-btn primary" id="ai-apply-btn">✓ Appliquer au formulaire</button>
+                                <button type="button" class="retro-btn" id="ai-dismiss-btn">Rejeter</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
