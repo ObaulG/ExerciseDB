@@ -1,8 +1,8 @@
-fastapi
+fastapi==0.141.1
 uvicorn[standard]
 jinja2
-python-dotenv
-atomic-agents
+python-dotenv==1.2.4
+atomic-agents==2.12.0
 instructor==1.14.5
 mistralai==2.4.0
 psycopg[binary,pool]
