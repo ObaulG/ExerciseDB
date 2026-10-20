@@ -68,6 +68,19 @@ var latexjsStylesLoaded = false;
 function ensureLatexjsStyles(generator) {
     if (latexjsStylesLoaded || !generator || !generator.stylesAndScripts) return;
     document.head.appendChild(generator.stylesAndScripts(LATEXJS_BASE));
+    // latex.js injecte base.css qui cible body/html globalement (display: grid,
+    // margin/padding: 0, font-family Computer Modern, text-align: justify)
+    // et ecrase le layout centre de retro.css. On restore ici les proprietes
+    // critiques pour que le layout reste centre apres le rendu des exercices.
+    var fix = document.createElement("style");
+    fix.id = "latexjs-layout-fix";
+    fix.textContent = [
+        "html, body { margin: 0; padding: 0; height: 100%; }",
+        "body { display: flex; flex-direction: column; align-items: center; padding: 16px; overflow: hidden; }",
+        "html { font-family: inherit; text-align: left; }"
+    ].join("
+");
+    document.head.appendChild(fix);
     latexjsStylesLoaded = true;
 }
 
@@ -195,17 +208,10 @@ function latexToHtml(latex) {
     return container;
 }
 
-// Version texte brut : commandes d'environnement retirées, \item en puce.
-function latexToPlainText(latex) {
-    return latex
-        .replace(/\\begin\{multicols\}\s*\{(\d+)\}|\\begin\{(?:itemize|enumerate)\}|\\end\{(?:itemize|enumerate|multicols)\}/g, "")
-        .replace(/\\item\b/g, "\u2022 ")
-        .replace(LATEX_IMAGE_RE, "[image : $1] ($2)");
-}
-
 // Affiche un contenu LaTeX dans un élément : version compilée (latex.js)
-// par défaut, texte brut via toggleLatexView. Repli texte brut si latex.js
-// n'est pas chargé ou si le parse échoue (LaTeX non supporté).
+// par défaut, texte brut via toggleLatexView. Le texte brut affiche le
+// LaTeX source tel quel, sans transformation ni rendu KaTeX. Repli texte
+// brut si latex.js n'est pas chargé ou si le parse échoue.
 function renderLatexContent(el, latex) {
     el.dataset.latex = latex;
     el.dataset.view = "compiled";
@@ -221,14 +227,13 @@ function renderLatexContent(el, latex) {
     }
     if (!compiled) {
         el.textContent = latex;
-        renderMath(el);
     }
 }
 
 function toggleLatexView(el) {
     if (el.dataset.view === "compiled") {
         el.dataset.view = "raw";
-        el.textContent = latexToPlainText(el.dataset.latex);
+        el.textContent = el.dataset.latex;
     } else {
         renderLatexContent(el, el.dataset.latex);
     }
