@@ -59,11 +59,6 @@
                     </div>
 
                     <div class="window-body">
-                        <div class="mode-tabs">
-                            <button class="retro-btn mode-tab active" data-mode="parser">🔧 Parser</button>
-                            <button class="retro-btn mode-tab" data-mode="agent">🤖 Agent LLM</button>
-                        </div>
-
                         <div class="extract-tabs">
                             <button class="retro-btn extract-tab active" data-tab="text">Texte brut</button>
                             <button class="retro-btn extract-tab" data-tab="pdf">Fichier PDF</button>
@@ -71,7 +66,7 @@
 
                         <div id="extract-text" class="extract-panel active">
                             <textarea id="raw-text" rows="6"
-                                      placeholder="Collez ici votre code LaTeX utilisant le package exercise...&#10;&#10;Exemple :&#10;\begin{Exercise}[Calcul de base]&#10;  Calculer $3 + 5$.&#10;  \begin{Answer}&#10;    $3 + 5 = 8$.&#10;  \end{Answer}&#10;\end{Exercise}&#10;&#10;\begin{Exercise}[Démonstration]&#10;  Démontrer que $\sqrt{2}$ est irrationnel.&#10;\end{Exercise}&#10;&#10;Les réponses (Answer) peuvent aussi apparaître plus loin dans le document."></textarea>
+                                      placeholder="Collez ici le texte brut contenant les exercices (PDF extrait, LaTeX, Typst, texte simple)...&#10;&#10;L'agent LLM identifie chaque exercice, son corrigé et ses métadonnées."></textarea>
                         </div>
 
                         <div id="extract-pdf" class="extract-panel">
@@ -111,7 +106,7 @@
                     <div class="status-bar">
                         <span class="status-field" id="save-status">Prêt</span>
                         <span class="status-field" id="saved-count">0 enregistré(s)</span>
-                        <span class="status-field">KaTeX + LaTeX</span>
+                        <span class="status-field">latex.js</span>
                     </div>
                 </div>
             </div>

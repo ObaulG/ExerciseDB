@@ -18,7 +18,7 @@ SYSTEM_PROMPT = SystemPromptGenerator(
     steps=[
         "Identifie chaque exercice individuel dans le texte. Un exercice commence typiquement par « Exercice N », « Ex N », « Exo N », « \\begin{exercice} », « @exercice », « #exercise(...) » (Typst), « Problème N », ou simplement par un changement de section.",
         "Pour les documents Typst, un exercice est délimité par #exercise(title: [...], difficulty: N)[ ... ] et son corrigé par #answer[ ... ]. Le corps de l'exercice est entre crochets ; extrais-le en convertissant les notations mathématiques Typst (plus, minus, times, div, eq, slash, lr(...), bb(...), sqrt(...)) vers le LaTeX équivalent.",
-        "Pour chaque exercice, extrais l'énoncé complet en préservant les notations mathématiques en LaTeX ($...$ / $$...$$).",
+        "Pour chaque exercice, extrais l'énoncé complet en LaTeX compilable directement par latex.js (paragraphes, itemize, enumerate, $...$ / $$...$$), sans commande d'image.",
         "Si un corrigé ou une solution accompagne l'exercice dans le texte, extrais-le dans le champ correction.",
         "Détermine le type d'exercice parmi : Application directe, Exercice classique, Exercice normal, Problème, Recherche, Démonstration, Problème complet.",
         "Estime le niveau scolaire parmi : CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, 2nde, 1ère, Terminale, Supérieur.",

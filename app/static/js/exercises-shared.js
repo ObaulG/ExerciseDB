@@ -40,27 +40,11 @@ const THEMES_DISPONIBLES = [
     "Théorème de Thalès",
 ];
 
-// === Rendu KaTeX ===
-
-function renderMath(element) {
-    if (window.renderMathInElement) {
-        renderMathInElement(element, {
-            delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "$", right: "$", display: false },
-            ],
-            throwOnError: false,
-        });
-    }
-}
-
 // === Compilation LaTeX via latex.js (https://latex.js.org) ===
-// La bibliothèque est chargée depuis le CDN dans les pages qui en ont
-// besoin ; latexjs.parse() gère itemize, enumerate, les commandes de mise
-// en forme et rend les mathématiques ($...$ / $$...$$) via KaTeX.
-// Les environnements multicols ne sont pas supportés par latex.js : ils
-// sont extraits au préalable et rendus en colonnes CSS, leur contenu est
-// compilé séparément (les \item isolés y sont encapsulés en itemize).
+// Le code LaTeX stocké en base est compilable tel quel par latex.js :
+// aucun pré-traitement n'est appliqué. Une éventuelle image (au plus une
+// par exercice) est déclarée à l'extérieur du code LaTeX, dans le champ
+// image_url, et rendue séparément via appendExerciseImage().
 
 var LATEXJS_BASE = "https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/";
 var latexjsStylesLoaded = false;
@@ -83,89 +67,12 @@ function ensureLatexjsStyles(generator) {
     latexjsStylesLoaded = true;
 }
 
-// === Images ===
-// Les images sont insérées dans le texte avec la syntaxe Markdown
-// ![texte alternatif](/static/images/...). latex.js ne supporte pas
-// \includegraphics : on remplace chaque marqueur par un placeholder unique
-// avant la compilation, puis on substitue le <img> correspondant dans le
-// fragment DOM généré.
-
-var LATEX_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
-
-function extractImages(latex) {
-    var images = [];
-    var text = latex.replace(LATEX_IMAGE_RE, function (m, alt, url) {
-        images.push({ alt: alt, url: url });
-        return "@@IMG" + (images.length - 1) + "@@";
-    });
-    return { text: text, images: images };
-}
-
-function replacePlaceholderInTextNode(node, placeholder, buildElement) {
-    var parts = node.nodeValue.split(placeholder);
-    var frag = document.createDocumentFragment();
-    for (var i = 0; i < parts.length; i++) {
-        if (i > 0) {
-            frag.appendChild(buildElement());
-        }
-        if (parts[i]) {
-            frag.appendChild(document.createTextNode(parts[i]));
-        }
-    }
-    node.parentNode.replaceChild(frag, node);
-}
-
-function collectTextNodes(root, acc) {
-    acc = acc || [];
-    for (var i = 0; i < root.childNodes.length; i++) {
-        var child = root.childNodes[i];
-        if (child.nodeType === 3) {
-            acc.push(child);
-        } else if (child.nodeType === 1) {
-            collectTextNodes(child, acc);
-        }
-    }
-    return acc;
-}
-
-function restoreImages(element, images) {
-    images.forEach(function (img, idx) {
-        var placeholder = "@@IMG" + idx + "@@";
-        var nodes = collectTextNodes(element);
-        nodes.forEach(function (node) {
-            if (node.nodeValue.indexOf(placeholder) !== -1) {
-                replacePlaceholderInTextNode(node, placeholder, function () {
-                    var imgEl = document.createElement("img");
-                    imgEl.className = "exercise-image";
-                    imgEl.src = img.url;
-                    imgEl.alt = img.alt;
-                    return imgEl;
-                });
-            }
-        });
-    });
-}
-
-var LATEXJS_UNSUPPORTED_ENVS = ["exercise", "answer", "solution"];
-
-// Les environnements du package exercise (\begin{Exercise}[Titre] ...,
-// \begin{Answer} ...) ne sont pas connus de latex.js : on les deballe
-// en conservant leur contenu avant la compilation.
-function unwrapUnsupportedEnvironments(latex) {
-    var text = latex;
-    LATEXJS_UNSUPPORTED_ENVS.forEach(function (env) {
-        var beginRe = new RegExp("\\\\begin\\{" + env + "\\}(\\\\\\[[^\\]]*\\])?", "gi");
-        text = text.replace(beginRe, "");
-        var endRe = new RegExp("\\\\end\\{" + env + "\\}", "gi");
-        text = text.replace(endRe, "\n");
-    });
-    return text;
-}
-
-function parseLatexFragment(latex) {
-    var extracted = extractImages(unwrapUnsupportedEnvironments(latex));
+// Compile un texte LaTeX en élément DOM via latex.js (rend les mathématiques
+// avec KaTeX). Le code doit être directement compilable : il est passé tel
+// quel au parseur.
+function latexToHtml(latex) {
     var generator = new latexjs.HtmlGenerator({ hyphenate: false });
-    generator = latexjs.parse(extracted.text, { generator: generator });
+    generator = latexjs.parse(latex, { generator: generator });
     ensureLatexjsStyles(generator);
     var frag = generator.domFragment();
     var div = document.createElement("div");
@@ -173,54 +80,7 @@ function parseLatexFragment(latex) {
     while (frag.firstChild) {
         div.appendChild(frag.firstChild);
     }
-    restoreImages(div, extracted.images);
     return div;
-}
-
-// Découpe un texte LaTeX en segments {type: "latex"|"multicols", ...}.
-// Les blocs multicols sont isolés pour être rendus en colonnes CSS.
-function splitMulticols(latex) {
-    var segments = [];
-    var re = /\\begin\{multicols\}\s*\{(\d+)\}([\s\S]*?)\\end\{multicols\}/g;
-    var lastIndex = 0;
-    var m;
-    while ((m = re.exec(latex)) !== null) {
-        if (m.index > lastIndex) {
-            segments.push({ type: "latex", latex: latex.slice(lastIndex, m.index) });
-        }
-        segments.push({ type: "multicols", cols: m[1], latex: m[2] });
-        lastIndex = m.index + m[0].length;
-    }
-    if (lastIndex < latex.length) {
-        segments.push({ type: "latex", latex: latex.slice(lastIndex) });
-    }
-    return segments;
-}
-
-// Les \item hors itemize/enumerate ne sont pas valides pour latex.js :
-// on encapsule le contenu de multicols dans un itemize si nécessaire.
-function wrapLooseItems(content) {
-    if (/\\item\b/.test(content) && !/\\begin\{(?:itemize|enumerate)\}/.test(content)) {
-        return "\\begin{itemize}\n" + content + "\n\\end{itemize}";
-    }
-    return content;
-}
-
-// Convertit un texte LaTeX en élément DOM compilé (latex.js + KaTeX).
-function latexToHtml(latex) {
-    var container = document.createElement("div");
-    splitMulticols(latex).forEach(function (seg) {
-        if (seg.type === "multicols") {
-            var cols = document.createElement("div");
-            cols.className = "latex-multicols";
-            cols.style.columnCount = seg.cols;
-            cols.appendChild(parseLatexFragment(wrapLooseItems(seg.latex)));
-            container.appendChild(cols);
-        } else if (seg.latex.trim()) {
-            container.appendChild(parseLatexFragment(seg.latex));
-        }
-    });
-    return container;
 }
 
 // Affiche un contenu LaTeX dans un élément : version brute (source telle
@@ -235,11 +95,7 @@ function renderLatexContent(el, latex, defaultView) {
             el.appendChild(latexToHtml(latex));
             el.dataset.view = "compiled";
         } catch (err) {
-            // Repli : texte source avec les mathematiques rendues via KaTeX,
-            // pour que la bascule affiche toujours une difference.
             el.textContent = latex;
-            renderMath(el);
-            el.dataset.view = "compiled";
         }
     } else {
         el.textContent = latex;
@@ -253,4 +109,15 @@ function toggleLatexView(el) {
     } else {
         renderLatexContent(el, el.dataset.latex);
     }
+}
+
+// === Image d'exercice (au plus une, déclarée hors du code LaTeX) ===
+
+function appendExerciseImage(el, imageUrl, alt) {
+    if (!imageUrl) return;
+    var img = document.createElement("img");
+    img.className = "exercise-image";
+    img.src = imageUrl;
+    img.alt = alt || "Image de l'exercice";
+    el.appendChild(img);
 }

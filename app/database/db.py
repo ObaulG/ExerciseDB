@@ -34,15 +34,18 @@ def configure(database_url: str) -> None:
 
 
 def get_connection():
-    conn = connect(
-        host=getenv("SUPABASE_HOST"),
-        port=5432,
-        dbname="postgres",
-        user="postgres",
-        password=getenv("SUPABASE_PW"),
-        sslmode="require",
-        row_factory=dict_row,
-    )
+    if DATABASE_URL:
+        conn = connect(DATABASE_URL, row_factory=dict_row)
+    else:
+        conn = connect(
+            host=getenv("SUPABASE_HOST"),
+            port=5432,
+            dbname="postgres",
+            user="postgres",
+            password=getenv("SUPABASE_PW"),
+            sslmode="require",
+            row_factory=dict_row,
+        )
     conn.autocommit = True
     return conn
 
@@ -91,6 +94,7 @@ def create_exercise(
     name: str,
     text: str,
     corrections: list[str],
+    image_url: str | None = None,
     type: str | None = None,
     niveau: str | None = None,
     temps_estime: int | None = None,
@@ -98,9 +102,9 @@ def create_exercise(
 ) -> int:
     with get_connection() as conn:
         row = conn.execute(
-            "INSERT INTO exercise (name, text, type, niveau, temps_estime) "
-            "VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (name, text, type, niveau, temps_estime),
+            "INSERT INTO exercise (name, text, image_url, type, niveau, temps_estime) "
+            "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+            (name, text, image_url, type, niveau, temps_estime),
         ).fetchone()
         exercise_id = row["id"]
         conn.cursor().executemany(
@@ -114,7 +118,7 @@ def create_exercise(
 def list_exercises() -> list[dict]:
     with get_connection() as conn:
         rows = conn.execute(
-            "SELECT id, name, text, type, niveau, temps_estime, created_at "
+            "SELECT id, name, text, image_url, type, niveau, temps_estime, created_at "
             "FROM exercise ORDER BY id DESC"
         ).fetchall()
         result = []
@@ -128,6 +132,7 @@ def list_exercises() -> list[dict]:
                     "id": row["id"],
                     "name": row["name"],
                     "text": row["text"],
+                    "image_url": row["image_url"],
                     "type": row["type"],
                     "niveau": row["niveau"],
                     "temps_estime": row["temps_estime"],
@@ -142,7 +147,7 @@ def list_exercises() -> list[dict]:
 def get_exercise(exercise_id: int) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT id, name, text, type, niveau, temps_estime, created_at "
+            "SELECT id, name, text, image_url, type, niveau, temps_estime, created_at "
             "FROM exercise WHERE id = %s",
             (exercise_id,),
         ).fetchone()
@@ -156,6 +161,7 @@ def get_exercise(exercise_id: int) -> dict | None:
             "id": row["id"],
             "name": row["name"],
             "text": row["text"],
+            "image_url": row["image_url"],
             "type": row["type"],
             "niveau": row["niveau"],
             "temps_estime": row["temps_estime"],
@@ -169,6 +175,7 @@ def update_exercise(
     exercise_id: int,
     name: str,
     text: str,
+    image_url: str | None = None,
     type: str | None = None,
     niveau: str | None = None,
     temps_estime: int | None = None,
@@ -177,9 +184,10 @@ def update_exercise(
 ) -> dict | None:
     with get_connection() as conn:
         row = conn.execute(
-            "UPDATE exercise SET name = %s, text = %s, type = %s, niveau = %s, "
-            "temps_estime = %s WHERE id = %s RETURNING id",
-            (name, text, type, niveau, temps_estime, exercise_id),
+            "UPDATE exercise SET name = %s, text = %s, image_url = %s, "
+            "type = %s, niveau = %s, temps_estime = %s "
+            "WHERE id = %s RETURNING id",
+            (name, text, image_url, type, niveau, temps_estime, exercise_id),
         ).fetchone()
         if row is None:
             return None
@@ -220,7 +228,7 @@ def search_exercises(
     """
     with get_connection() as conn:
         sql = (
-            "SELECT DISTINCT e.id, e.name, e.text, e.type, e.niveau, "
+            "SELECT DISTINCT e.id, e.name, e.text, e.image_url, e.type, e.niveau, "
             "e.temps_estime, e.created_at "
             "FROM exercise e "
         )
@@ -259,6 +267,7 @@ def search_exercises(
                     "id": row["id"],
                     "name": row["name"],
                     "text": row["text"],
+                    "image_url": row["image_url"],
                     "type": row["type"],
                     "niveau": row["niveau"],
                     "temps_estime": row["temps_estime"],

@@ -20,15 +20,15 @@ SYSTEM_PROMPT = SystemPromptGenerator(
     steps=[
         "Lis l'instruction de l'utilisateur et identifie ce qui doit être modifié : énoncé, corrigé, métadonnées, ou une combinaison.",
         "Conserve les champs que l'utilisateur n'a pas demandé à modifier, sauf si l'instruction les impacte explicitement.",
-        "Si l'utilisateur demande de compléter ou rédiger l'énoncé, produis un énoncé complet et bien posé en LaTeX balisé ($...$ / $$...$$).",
-        "Si l'utilisateur demande de compléter ou rédiger le corrigé, produis un corrigé détaillé avec toutes les étapes de résolution, en LaTeX balisé.",
+        "Si l'utilisateur demande de compléter ou rédiger l'énoncé, produis un énoncé complet et bien posé en LaTeX, compilable directement par latex.js (paragraphes, itemize, enumerate, $...$ / $$...$$).",
+        "Si l'utilisateur demande de compléter ou rédiger le corrigé, produis un corrigé détaillé avec toutes les étapes de résolution, en LaTeX compilable directement par latex.js.",
         "Si l'utilisateur demande d'ajuster les métadonnées (type, niveau, temps, thèmes), utilise les listes de référence du schéma de sortie.",
         "Préserve fidèlement les notations mathématiques LaTeX déjà présentes.",
     ],
     output_instructions=[
         "Réponds toujours en français.",
         "Renvoie l'exercice complet, jamais un fragment. Les champs non modifiés sont recopiés à l'identique.",
-        "Le champ text contient l'énoncé complet en LaTeX balisé ($...$ / $$...$$).",
+        "Le champ text contient l'énoncé complet en LaTeX compilable directement par latex.js.",
         "Le champ corrections est une liste : un élément par corrigé. Si l'utilisateur n'en demande qu'un, renvoie une liste à un seul élément.",
         "Les thèmes proviennent exclusivement de la liste de référence : Calcul — opérations élémentaires, Fractions, Géométrie, "
         "Logique et raisonnement, Probabilités, Calcul littéral, Nombres décimaux, Proportionnalité, Statistiques, Fonctions, "

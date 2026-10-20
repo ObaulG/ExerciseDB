@@ -60,11 +60,7 @@
                             <input type="text" id="f-name" maxlength="200" placeholder="Titre de l'exercice">
 
                             <label for="f-text">Énoncé</label>
-                            <textarea id="f-text" rows="6" placeholder="Énoncé de l'exercice (LaTeX autorisé : $...$ / $$...$$)"></textarea>
-                            <div class="image-insert-row">
-                                <button type="button" class="retro-btn image-insert-btn" data-target="f-text">🖼️ Insérer une image dans l’énoncé</button>
-                                <span class="inline-status image-status" data-target="f-text"></span>
-                            </div>
+                            <textarea id="f-text" rows="6" placeholder="Énoncé de l'exercice, en LaTeX compilable par latex.js ($...$ / $$...$$)"></textarea>
 
                             <div class="ex-card-row">
                                 <div class="ex-card-field">
@@ -84,12 +80,15 @@
                             <label>Thèmes</label>
                             <div id="themes-block"></div>
 
-                            <label for="f-correction">Correction <span class="opt">(optionnel)</span></label>
-                            <textarea id="f-correction" rows="6" placeholder="Texte du corrigé (LaTeX autorisé : $...$ / $$...$$)"></textarea>
+                            <label for="f-image">Image <span class="opt">(optionnelle, au plus une, déclarée hors du code LaTeX)</span></label>
                             <div class="image-insert-row">
-                                <button type="button" class="retro-btn image-insert-btn" data-target="f-correction">🖼️ Insérer une image dans la correction</button>
-                                <span class="inline-status image-status" data-target="f-correction"></span>
+                                <button type="button" class="retro-btn image-insert-btn" id="f-image-btn">🖼️ Choisir une image</button>
+                                <button type="button" class="retro-btn" id="f-image-remove" style="display:none">✕ Retirer l’image</button>
+                                <span class="inline-status image-status" id="f-image-status"></span>
                             </div>
+
+                            <label for="f-correction">Correction <span class="opt">(optionnel)</span></label>
+                            <textarea id="f-correction" rows="6" placeholder="Texte du corrigé, en LaTeX compilable par latex.js ($...$ / $$...$$)"></textarea>
 
                             <div class="form-actions">
                                 <button type="button" class="retro-btn primary" id="save-btn">💾 Enregistrer dans la base</button>

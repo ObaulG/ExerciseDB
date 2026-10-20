@@ -74,7 +74,8 @@ class CorrectionIn(BaseModel):
 
 class ExerciseIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
-    text: str = Field(..., min_length=1, description="Énoncé de l'exercice (LaTeX autorisé).")
+    text: str = Field(..., min_length=1, description="Énoncé de l'exercice, en LaTeX compilable directement par latex.js (sans image).")
+    image_url: str | None = Field(None, description="Image de l'exercice (au plus une), déclarée hors du code LaTeX.")
     type: str | None = Field(None, description="Type d'exercice (application directe, exercice classique, etc.).")
     niveau: str | None = Field(None, description="Niveau scolaire (6e, 5e, 4e, 3e, 2nde, etc.).")
     temps_estime: int | None = Field(None, ge=0, description="Temps estimé en minutes.")
@@ -88,7 +89,8 @@ class ExtractionRequest(BaseModel):
 
 class AIEditRequest(BaseModel):
     name: str = Field(default="", description="Titre actuel de l'exercice.")
-    text: str = Field(default="", description="Énoncé actuel de l'exercice (LaTeX autorisé).")
+    text: str = Field(default="", description="Énoncé actuel de l'exercice, en LaTeX compilable par latex.js.")
+    image_url: str | None = Field(default=None, description="Image actuelle de l'exercice, hors du code LaTeX.")
     type: str | None = Field(default=None, description="Type actuel de l'exercice.")
     niveau: str | None = Field(default=None, description="Niveau scolaire actuel.")
     temps_estime: int | None = Field(default=None, ge=0, description="Temps estimé actuel en minutes.")
@@ -148,6 +150,7 @@ async def ai_edit(
             ExerciseEditInputSchema(
                 name=payload.name or "",
                 text=payload.text or "",
+                image_url=payload.image_url or "",
                 type=payload.type or "",
                 niveau=payload.niveau or "",
                 temps_estime=payload.temps_estime or 0,
@@ -170,6 +173,7 @@ async def ai_edit(
         "exercise": {
             "name": ex.name,
             "text": ex.text,
+            "image_url": ex.image_url or None,
             "type": ex.type,
             "niveau": ex.niveau,
             "temps_estime": ex.temps_estime,
@@ -186,6 +190,7 @@ async def create_exercise(payload: ExerciseIn) -> dict:
         name=payload.name,
         text=payload.text,
         corrections=[c.text for c in payload.corrections],
+        image_url=payload.image_url,
         type=payload.type,
         niveau=payload.niveau,
         temps_estime=payload.temps_estime,
@@ -217,6 +222,7 @@ async def update_exercise(exercise_id: int, payload: ExerciseIn, request: Reques
         exercise_id=exercise_id,
         name=payload.name,
         text=payload.text,
+        image_url=payload.image_url,
         type=payload.type,
         niveau=payload.niveau,
         temps_estime=payload.temps_estime,

@@ -142,8 +142,9 @@ function renderSearchResults(exercises) {
 
         var text = document.createElement("div");
         text.className = "search-result-text";
-        text.textContent = ex.text;
+        renderLatexContent(text, ex.text);
         info.appendChild(text);
+        appendExerciseImage(info, ex.image_url, ex.name);
 
         item.appendChild(info);
 
@@ -173,7 +174,6 @@ function renderSearchResults(exercises) {
         item.appendChild(addDiv);
 
         container.appendChild(item);
-        renderMath(info);
     });
 }
 
@@ -297,8 +297,9 @@ function showWorkZone() {
 
         var text = document.createElement("div");
         text.className = "work-exercise-text";
-        text.textContent = ex.text;
+        renderLatexContent(text, ex.text);
         body.appendChild(text);
+        appendExerciseImage(body, ex.image_url, ex.name);
 
         var answerDiv = document.createElement("div");
         answerDiv.className = "work-exercise-answer";
@@ -317,8 +318,6 @@ function showWorkZone() {
         body.appendChild(answerDiv);
         block.appendChild(body);
         container.appendChild(block);
-
-        renderMath(text);
     });
 
     // Scroll vers la zone de travail
