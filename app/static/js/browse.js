@@ -71,20 +71,20 @@ function buildExerciseItem(ex) {
 
     var body = document.createElement("div");
     body.className = "exercise-text";
-    renderLatexContent(body, ex.text);
+    renderLatexContent(body, ex.text, "raw");
     item.appendChild(body);
 
     (ex.corrections || []).forEach(function (c) {
         var block = document.createElement("div");
         block.className = "correction-block";
-        renderLatexContent(block, c.text);
+        renderLatexContent(block, c.text, "raw");
         item.appendChild(block);
     });
 
     var viewBtn = document.createElement("button");
     viewBtn.type = "button";
     viewBtn.className = "retro-btn latex-view-btn";
-    viewBtn.textContent = "\ud83d\udcc4 Texte brut";
+    viewBtn.textContent = "\ud83d\udcdf LaTeX compil\u00e9";
     viewBtn.addEventListener("click", function () {
         var targets = [body].concat(Array.prototype.slice.call(item.querySelectorAll(".correction-block")));
         var switchingToRaw = body.dataset.view === "compiled";
