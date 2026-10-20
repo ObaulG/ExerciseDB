@@ -24,7 +24,8 @@ _database_url = os.environ.get("DATABASE_URL", "").strip()
 if _database_url:
     db.configure(_database_url)
     print("tentative de connexion à la DB Supabase...")
-    db.init_db()
+    if os.environ.get("INIT_DB", "").lower() in ("1", "true", "yes"):
+        db.init_db()
 
 app.include_router(api_router)
 app.include_router(exercise_router)

@@ -36,7 +36,6 @@
 
 /* --- Résultats de recherche --- */
 .search-results {
-    max-height: 250px;
     overflow-y: auto;
 }
 

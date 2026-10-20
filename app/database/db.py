@@ -36,7 +36,7 @@ def configure(database_url: str) -> None:
 def get_connection():
     conn = connect(
         host=getenv("SUPABASE_HOST"),
-        port=6543,
+        port=5432,
         dbname="postgres",
         user="postgres",
         password=getenv("SUPABASE_PW"),

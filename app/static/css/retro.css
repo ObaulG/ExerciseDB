@@ -19,9 +19,13 @@
     --lien-visite: #663399;
 }
 
-body {
+html, body {
     margin: 0;
     padding: 0;
+    height: 100%;
+}
+
+body {
     background-color: var(--fond);
     background-image:
         repeating-linear-gradient(
@@ -34,17 +38,19 @@ body {
     font-family: "MS PGothic", "ＭＳ Ｐゴシック", "MS Gothic", "ＭＳ ゴシック", "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", "Meiryo", "メイリオ", "Osaka", "Noto Sans CJK JP", "Verdana", sans-serif;
     font-size: 13px;
     color: var(--texte);
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 16px;
+    overflow: hidden;
 }
 
 /* --- Bandeau d'en-tête du site --- */
 .site-banner {
     width: 100%;
     max-width: 1024px;
+    flex-shrink: 0;
     background: linear-gradient(180deg, var(--bleu) 0%, var(--bleu-fonce) 100%);
     border: 3px solid var(--bleu-fonce);
     border-bottom: none;
@@ -70,9 +76,16 @@ body {
 }
 
 /* --- Conteneur principal en ratio 4:3 --- */
+/* La fenêtre remplit la hauteur disponible sous le bandeau tout en
+   conservant le ratio 4:3. La hauteur est fixée par flex (espace
+   restant sous le bandeau), la largeur est dérivée du ratio et
+   plafonnée à 1024px. Quand la largeur dérivée dépasse la largeur
+   disponible, c'est la largeur qui devient limitante et la hauteur
+   s'ajuste (centrage horizontal via align-items sur le body). */
 .layout {
-    width: 100%;
-    max-width: 1024px;
+    flex: 1 1 auto;
+    width: auto;
+    max-width: min(100%, 1024px);
     aspect-ratio: 4 / 3;
     min-height: 0;
     display: flex;
@@ -271,6 +284,26 @@ body {
     padding: 12px;
     background:
         linear-gradient(180deg, var(--bleu-pale) 0%, #ffffff 60px);
+}
+
+/* Quand .content-body ne contient qu'une seule .window (ex: chat,
+   browse), on la fait remplir toute la hauteur disponible pour que sa
+   sous-zone scrollable interne s'adapte au lieu d'avoir une hauteur
+   fixe. Les pages multi-fenêtres gardent le scroll global de
+   .content-body. */
+.content-body > .window:only-child {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    margin-bottom: 0;
+}
+
+.content-body > .window:only-child > .window-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 /* --- Boîte / section (style site web 2000) --- */

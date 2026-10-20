@@ -7,7 +7,7 @@ from atomic_agents.agents.atomic_agent import AgentConfig, AtomicAgent, ChatHist
 
 from app.llm.schemas import ExerciseEditInputSchema, ExerciseEditOutputSchema
 
-MISTRAL_MODEL = os.environ.get("MISTRAL_MODEL", "mistral-small-latest")
+MISTRAL_MODEL = os.environ.get("MISTRAL_MODEL", "ministral-14b-2512")
 
 SYSTEM_PROMPT = SystemPromptGenerator(
     background=[
