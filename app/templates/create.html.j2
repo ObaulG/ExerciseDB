@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/latex.js"></script>
     <script defer src="/static/js/auth.js"></script>
     <script defer src="/static/js/exercises-shared.js"></script>
     <script defer src="/static/js/create.js"></script>
@@ -60,6 +61,10 @@
 
                             <label for="f-text">Énoncé</label>
                             <textarea id="f-text" rows="6" placeholder="Énoncé de l'exercice (LaTeX autorisé : $...$ / $$...$$)"></textarea>
+                            <div class="image-insert-row">
+                                <button type="button" class="retro-btn image-insert-btn" data-target="f-text">🖼️ Insérer une image dans l’énoncé</button>
+                                <span class="inline-status image-status" data-target="f-text"></span>
+                            </div>
 
                             <div class="ex-card-row">
                                 <div class="ex-card-field">
@@ -81,6 +86,10 @@
 
                             <label for="f-correction">Correction <span class="opt">(optionnel)</span></label>
                             <textarea id="f-correction" rows="6" placeholder="Texte du corrigé (LaTeX autorisé : $...$ / $$...$$)"></textarea>
+                            <div class="image-insert-row">
+                                <button type="button" class="retro-btn image-insert-btn" data-target="f-correction">🖼️ Insérer une image dans la correction</button>
+                                <span class="inline-status image-status" data-target="f-correction"></span>
+                            </div>
 
                             <div class="form-actions">
                                 <button type="button" class="retro-btn primary" id="save-btn">💾 Enregistrer dans la base</button>
