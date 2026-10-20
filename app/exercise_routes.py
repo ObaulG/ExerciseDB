@@ -1,3 +1,9 @@
+import base64
+import binascii
+import re
+import uuid
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel, Field
 from typing import Annotated
@@ -9,6 +15,57 @@ from app.llm.extraction_agent import extract_exercises
 from app.llm.schemas import ExerciseEditInputSchema
 
 router = APIRouter(prefix="/api/exercises", tags=["exercises"])
+
+IMAGES_DIR = Path(__file__).resolve().parent / "static" / "images"
+
+IMAGE_MIME_EXTENSIONS = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/svg+xml": ".svg",
+}
+
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
+
+class ImageUploadIn(BaseModel):
+    filename: str = Field(default="", description="Nom de fichier d'origine (pour l'extension).")
+    mime_type: str = Field(..., description="Type MIME de l'image (image/png, image/jpeg, ...).")
+    data_base64: str = Field(..., min_length=1, description="Contenu de l'image encodé en base64.")
+
+
+@router.post("/images")
+async def upload_image(payload: ImageUploadIn) -> dict:
+    """Enregistre une image envoyée en base64 et renvoie son URL.
+
+    L'URL peut être insérée dans un énoncé ou un corrigé avec la syntaxe
+    Markdown ``![texte alternatif](url)``, convertie en <img> au rendu.
+    """
+    mime = payload.mime_type.lower().split(";")[0].strip()
+    extension = IMAGE_MIME_EXTENSIONS.get(mime)
+    if extension is None:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Type d'image non supporté : {payload.mime_type}. "
+                   "Formats acceptés : PNG, JPEG, GIF, WebP, SVG.",
+        )
+    try:
+        content = base64.b64decode(payload.data_base64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Contenu base64 invalide.") from exc
+    if not content:
+        raise HTTPException(status_code=400, detail="Image vide.")
+    if len(content) > MAX_IMAGE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="Image trop volumineuse (5 Mo maximum).",
+        )
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r"[^a-z0-9_-]+", "-", Path(payload.filename).stem.lower()).strip("-")[:40]
+    name = f"{slug or 'image'}-{uuid.uuid4().hex[:12]}{extension}"
+    (IMAGES_DIR / name).write_bytes(content)
+    return {"url": f"/static/images/{name}", "filename": name}
 
 
 class CorrectionIn(BaseModel):

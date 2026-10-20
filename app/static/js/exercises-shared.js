@@ -71,9 +71,73 @@ function ensureLatexjsStyles(generator) {
     latexjsStylesLoaded = true;
 }
 
+// === Images ===
+// Les images sont insérées dans le texte avec la syntaxe Markdown
+// ![texte alternatif](/static/images/...). latex.js ne supporte pas
+// \includegraphics : on remplace chaque marqueur par un placeholder unique
+// avant la compilation, puis on substitue le <img> correspondant dans le
+// fragment DOM généré.
+
+var LATEX_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+
+function extractImages(latex) {
+    var images = [];
+    var text = latex.replace(LATEX_IMAGE_RE, function (m, alt, url) {
+        images.push({ alt: alt, url: url });
+        return "@@IMG" + (images.length - 1) + "@@";
+    });
+    return { text: text, images: images };
+}
+
+function replacePlaceholderInTextNode(node, placeholder, buildElement) {
+    var parts = node.nodeValue.split(placeholder);
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < parts.length; i++) {
+        if (i > 0) {
+            frag.appendChild(buildElement());
+        }
+        if (parts[i]) {
+            frag.appendChild(document.createTextNode(parts[i]));
+        }
+    }
+    node.parentNode.replaceChild(frag, node);
+}
+
+function collectTextNodes(root, acc) {
+    acc = acc || [];
+    for (var i = 0; i < root.childNodes.length; i++) {
+        var child = root.childNodes[i];
+        if (child.nodeType === 3) {
+            acc.push(child);
+        } else if (child.nodeType === 1) {
+            collectTextNodes(child, acc);
+        }
+    }
+    return acc;
+}
+
+function restoreImages(element, images) {
+    images.forEach(function (img, idx) {
+        var placeholder = "@@IMG" + idx + "@@";
+        var nodes = collectTextNodes(element);
+        nodes.forEach(function (node) {
+            if (node.nodeValue.indexOf(placeholder) !== -1) {
+                replacePlaceholderInTextNode(node, placeholder, function () {
+                    var imgEl = document.createElement("img");
+                    imgEl.className = "exercise-image";
+                    imgEl.src = img.url;
+                    imgEl.alt = img.alt;
+                    return imgEl;
+                });
+            }
+        });
+    });
+}
+
 function parseLatexFragment(latex) {
+    var extracted = extractImages(latex);
     var generator = new latexjs.HtmlGenerator({ hyphenate: false });
-    generator = latexjs.parse(latex, { generator: generator });
+    generator = latexjs.parse(extracted.text, { generator: generator });
     ensureLatexjsStyles(generator);
     var frag = generator.domFragment();
     var div = document.createElement("div");
@@ -81,6 +145,7 @@ function parseLatexFragment(latex) {
     while (frag.firstChild) {
         div.appendChild(frag.firstChild);
     }
+    restoreImages(div, extracted.images);
     return div;
 }
 
@@ -134,7 +199,8 @@ function latexToHtml(latex) {
 function latexToPlainText(latex) {
     return latex
         .replace(/\\begin\{multicols\}\s*\{(\d+)\}|\\begin\{(?:itemize|enumerate)\}|\\end\{(?:itemize|enumerate|multicols)\}/g, "")
-        .replace(/\\item\b/g, "\u2022 ");
+        .replace(/\\item\b/g, "\u2022 ")
+        .replace(LATEX_IMAGE_RE, "[image : $1] ($2)");
 }
 
 // Affiche un contenu LaTeX dans un élément : version compilée (latex.js)

@@ -15,8 +15,78 @@ document.addEventListener("DOMContentLoaded", function () {
     initFormListeners();
     initThemesBlock();
     initActions();
+    initImageInsert();
     renderPreview();
 });
+
+// === Insertion d'images ===
+function initImageInsert() {
+    var fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/png,image/jpeg,image/gif,image/webp,image/svg+xml";
+    fileInput.style.display = "none";
+    document.body.appendChild(fileInput);
+
+    document.querySelectorAll(".image-insert-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            fileInput.dataset.target = btn.dataset.target;
+            fileInput.value = "";
+            fileInput.click();
+        });
+    });
+
+    fileInput.addEventListener("change", async function () {
+        var file = fileInput.files[0];
+        if (!file) return;
+        var targetId = fileInput.dataset.target;
+        var statusEl = document.querySelector('.image-status[data-target="' + targetId + '"]');
+        var textarea = document.getElementById(targetId);
+        statusEl.textContent = "Envoi de l’image…";
+        try {
+            var dataBase64 = await fileToBase64(file);
+            var res = await fetch("/api/exercises/images", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    filename: file.name,
+                    mime_type: file.type,
+                    data_base64: dataBase64,
+                }),
+            });
+            if (!res.ok) {
+                var err = await res.json().catch(function () { return { detail: "Erreur" }; });
+                throw new Error(err.detail || "Erreur lors de l’envoi de l’image");
+            }
+            var data = await res.json();
+            insertAtCursor(textarea, "![" + file.name.replace(/\.[^.]+$/, "") + "](" + data.url + ")");
+            statusEl.textContent = "Image insérée.";
+            renderPreview();
+        } catch (err) {
+            statusEl.textContent = "Erreur : " + err.message;
+        }
+    });
+}
+
+function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            resolve(String(reader.result).split(",")[1] || "");
+        };
+        reader.onerror = function () { reject(new Error("Lecture du fichier impossible")); };
+        reader.readAsDataURL(file);
+    });
+}
+
+function insertAtCursor(textarea, text) {
+    var start = textarea.selectionStart != null ? textarea.selectionStart : textarea.value.length;
+    var end = textarea.selectionEnd != null ? textarea.selectionEnd : start;
+    textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+    var pos = start + text.length;
+    textarea.setSelectionRange(pos, pos);
+    textarea.focus();
+    textarea.dispatchEvent(new Event("input"));
+}
 
 // === Sélecteurs Type / Niveau ===
 
@@ -102,8 +172,7 @@ function fillPreview(el, content, emptyMsg, isCorrection) {
     el.innerHTML = "";
     if (content.trim()) {
         el.classList.remove("empty");
-        el.textContent = content;
-        renderMath(el);
+        renderLatexContent(el, content);
     } else {
         el.classList.add("empty");
         el.textContent = emptyMsg;

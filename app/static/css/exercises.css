@@ -476,3 +476,26 @@ button.primary {
     padding: 2px 8px;
     margin-top: 4px;
 }
+
+/* === Images insérées dans les exercices === */
+.exercise-image {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    margin: 6px auto;
+    border: 1px solid var(--bleu-fonce);
+    background: #ffffff;
+    padding: 2px;
+}
+
+.image-insert-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.image-insert-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+}
