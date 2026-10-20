@@ -436,27 +436,39 @@ button.primary {
     margin-top: 6px;
 }
 
-/* === Rendu LaTeX compilé === */
-.exercise-item ul,
-.exercise-item ol,
-.correction-block ul,
-.correction-block ol {
-    margin: 4px 0 4px 18px;
-    padding-left: 12px;
+/* === Rendu LaTeX compilé (latex.js) === */
+/* latex.js injecte css/article.css (largeur 30em) : on le neutralise
+   localement pour rester dans le style rétro compact du site. */
+.exercise-text .latexjs-body,
+.correction-block .latexjs-body {
+    all: unset;
+    display: block;
+    font-size: 11px;
+    line-height: 1.4;
 }
 
-.exercise-item li,
-.correction-block li {
+.exercise-text .latexjs-body p,
+.correction-block .latexjs-body p {
+    margin: 2px 0;
+}
+
+.exercise-text .latexjs-body ol,
+.exercise-text .latexjs-body ul,
+.correction-block .latexjs-body ol,
+.correction-block .latexjs-body ul {
+    margin: 4px 0 4px 14px;
+    padding-left: 14px;
+    font-size: 11px;
+}
+
+.exercise-text .latexjs-body li,
+.correction-block .latexjs-body li {
     margin: 2px 0;
 }
 
 .latex-multicols {
     column-gap: 18px;
     margin: 4px 0;
-}
-
-.latex-item-dot {
-    font-weight: bold;
 }
 
 .latex-view-btn {

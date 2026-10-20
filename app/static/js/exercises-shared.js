@@ -54,107 +54,109 @@ function renderMath(element) {
     }
 }
 
-// === LaTeX vers HTML (itemize, enumerate, multicols, \item) ===
+// === Compilation LaTeX via latex.js (https://latex.js.org) ===
+// La bibliothèque est chargée depuis le CDN dans les pages qui en ont
+// besoin ; latexjs.parse() gère itemize, enumerate, les commandes de mise
+// en forme et rend les mathématiques ($...$ / $$...$$) via KaTeX.
+// Les environnements multicols ne sont pas supportés par latex.js : ils
+// sont extraits au préalable et rendus en colonnes CSS, leur contenu est
+// compilé séparément (les \item isolés y sont encapsulés en itemize).
 
-function escapeHtmlText(s) {
-    return s
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+var LATEXJS_BASE = "https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/";
+var latexjsStylesLoaded = false;
+
+function ensureLatexjsStyles(generator) {
+    if (latexjsStylesLoaded || !generator || !generator.stylesAndScripts) return;
+    document.head.appendChild(generator.stylesAndScripts(LATEXJS_BASE));
+    latexjsStylesLoaded = true;
 }
 
-// Un seul parcours : segments mathématiques préservés tels quels (rendus
-// ensuite par KaTeX), environnements convertis en HTML avec un état
-// persistant sur toute la chaîne (listes imbriquées, multicols).
-var LATEX_TOKEN_RE = /\$\$[\s\S]*?\$\$|\$[^$\n]*?\$|\\begin\{(?:itemize|enumerate|multicols)\}(?:\s*\{(\d+)\})?|\\end\{(?:itemize|enumerate|multicols)\}|\\item\b/g;
+function parseLatexFragment(latex) {
+    var generator = new latexjs.HtmlGenerator({ hyphenate: false });
+    generator = latexjs.parse(latex, { generator: generator });
+    ensureLatexjsStyles(generator);
+    var frag = generator.domFragment();
+    var div = document.createElement("div");
+    div.className = "latexjs-body";
+    while (frag.firstChild) {
+        div.appendChild(frag.firstChild);
+    }
+    return div;
+}
 
-function latexToHtml(latex) {
-    var html = "";
-    var listStack = [];
-    var inItem = false;
-    var colsDepth = 0;
+// Découpe un texte LaTeX en segments {type: "latex"|"multicols", ...}.
+// Les blocs multicols sont isolés pour être rendus en colonnes CSS.
+function splitMulticols(latex) {
+    var segments = [];
+    var re = /\\begin\{multicols\}\s*\{(\d+)\}([\s\S]*?)\\end\{multicols\}/g;
     var lastIndex = 0;
     var m;
-    LATEX_TOKEN_RE.lastIndex = 0;
-    while ((m = LATEX_TOKEN_RE.exec(latex)) !== null) {
-        html += escapeHtmlText(latex.slice(lastIndex, m.index)).replace(/\r?\n/g, "<br>");
-        var token = m[0];
-        if (token.charAt(0) === "$") {
-            html += token;
-        } else {
-            var beginMatch = /^\\begin\{(itemize|enumerate|multicols)\}(?:\s*\{(\d+)\})?$/.exec(token);
-            if (beginMatch) {
-                var env = beginMatch[1];
-                if (env === "multicols") {
-                    var cols = beginMatch[2] || "2";
-                    html += '<div class="latex-multicols" style="column-count:' + cols + '">';
-                    colsDepth++;
-                } else {
-                    html += env === "itemize" ? "<ul>" : "<ol>";
-                    listStack.push(env);
-                }
-            } else if (/^\\end\{/.test(token)) {
-                var endEnv = /^\\end\{(itemize|enumerate|multicols)\}$/.exec(token)[1];
-                if (endEnv === "multicols") {
-                    if (colsDepth > 0) {
-                        html += "</div>";
-                        colsDepth--;
-                    }
-                } else if (listStack.length > 0 && listStack[listStack.length - 1] === endEnv) {
-                    if (inItem) {
-                        html += "</li>";
-                        inItem = false;
-                    }
-                    html += endEnv === "itemize" ? "</ul>" : "</ol>";
-                    listStack.pop();
-                }
-            } else { // \item
-                if (inItem) {
-                    html += "</li>";
-                }
-                if (listStack.length > 0) {
-                    html += "<li>";
-                    inItem = true;
-                } else {
-                    html += '<span class="latex-item-dot">&#8226;&nbsp;</span>';
-                }
-            }
+    while ((m = re.exec(latex)) !== null) {
+        if (m.index > lastIndex) {
+            segments.push({ type: "latex", latex: latex.slice(lastIndex, m.index) });
         }
-        lastIndex = m.index + token.length;
+        segments.push({ type: "multicols", cols: m[1], latex: m[2] });
+        lastIndex = m.index + m[0].length;
     }
-    html += escapeHtmlText(latex.slice(lastIndex)).replace(/\r?\n/g, "<br>");
-    while (inItem) {
-        html += "</li>";
-        inItem = false;
+    if (lastIndex < latex.length) {
+        segments.push({ type: "latex", latex: latex.slice(lastIndex) });
     }
-    while (listStack.length > 0) {
-        html += listStack.pop() === "itemize" ? "</ul>" : "</ol>";
-    }
-    while (colsDepth > 0) {
-        html += "</div>";
-        colsDepth--;
-    }
-    html = html.replace(/<br>(<\/(?:li|ul|ol|div)>)/g, "$1")
-               .replace(/(<(?:ul|ol|div[^>]*)>)<br>/g, "$1");
-    return html;
+    return segments;
 }
 
-// Convertit un texte LaTeX en texte brut : les commandes d'environnement
-// sont retirées, \item devient une puce.
+// Les \item hors itemize/enumerate ne sont pas valides pour latex.js :
+// on encapsule le contenu de multicols dans un itemize si nécessaire.
+function wrapLooseItems(content) {
+    if (/\\item\b/.test(content) && !/\\begin\{(?:itemize|enumerate)\}/.test(content)) {
+        return "\\begin{itemize}\n" + content + "\n\\end{itemize}";
+    }
+    return content;
+}
+
+// Convertit un texte LaTeX en élément DOM compilé (latex.js + KaTeX).
+function latexToHtml(latex) {
+    var container = document.createElement("div");
+    splitMulticols(latex).forEach(function (seg) {
+        if (seg.type === "multicols") {
+            var cols = document.createElement("div");
+            cols.className = "latex-multicols";
+            cols.style.columnCount = seg.cols;
+            cols.appendChild(parseLatexFragment(wrapLooseItems(seg.latex)));
+            container.appendChild(cols);
+        } else if (seg.latex.trim()) {
+            container.appendChild(parseLatexFragment(seg.latex));
+        }
+    });
+    return container;
+}
+
+// Version texte brut : commandes d'environnement retirées, \item en puce.
 function latexToPlainText(latex) {
     return latex
         .replace(/\\begin\{multicols\}\s*\{(\d+)\}|\\begin\{(?:itemize|enumerate)\}|\\end\{(?:itemize|enumerate|multicols)\}/g, "")
         .replace(/\\item\b/g, "\u2022 ");
 }
 
-// Affiche un contenu LaTeX dans un élément, avec rendu compilé (HTML +
-// KaTeX) et bascule vers le texte brut.
+// Affiche un contenu LaTeX dans un élément : version compilée (latex.js)
+// par défaut, texte brut via toggleLatexView. Repli texte brut si latex.js
+// n'est pas chargé ou si le parse échoue (LaTeX non supporté).
 function renderLatexContent(el, latex) {
     el.dataset.latex = latex;
     el.dataset.view = "compiled";
-    el.innerHTML = latexToHtml(latex);
-    renderMath(el);
+    el.innerHTML = "";
+    var compiled = false;
+    if (window.latexjs) {
+        try {
+            el.appendChild(latexToHtml(latex));
+            compiled = true;
+        } catch (err) {
+            compiled = false;
+        }
+    }
+    if (!compiled) {
+        el.textContent = latex;
+        renderMath(el);
+    }
 }
 
 function toggleLatexView(el) {
