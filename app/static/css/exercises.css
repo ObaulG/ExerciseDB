@@ -435,3 +435,32 @@ button.primary {
 .edit-form .ex-card-row {
     margin-top: 6px;
 }
+
+/* === Rendu LaTeX compilé === */
+.exercise-item ul,
+.exercise-item ol,
+.correction-block ul,
+.correction-block ol {
+    margin: 4px 0 4px 18px;
+    padding-left: 12px;
+}
+
+.exercise-item li,
+.correction-block li {
+    margin: 2px 0;
+}
+
+.latex-multicols {
+    column-gap: 18px;
+    margin: 4px 0;
+}
+
+.latex-item-dot {
+    font-weight: bold;
+}
+
+.latex-view-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    margin-top: 4px;
+}

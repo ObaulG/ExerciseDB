@@ -71,17 +71,27 @@ function buildExerciseItem(ex) {
 
     var body = document.createElement("div");
     body.className = "exercise-text";
-    body.textContent = ex.text;
+    renderLatexContent(body, ex.text);
     item.appendChild(body);
 
     (ex.corrections || []).forEach(function (c) {
         var block = document.createElement("div");
         block.className = "correction-block";
-        block.textContent = c.text;
+        renderLatexContent(block, c.text);
         item.appendChild(block);
     });
 
-    renderMath(item);
+    var viewBtn = document.createElement("button");
+    viewBtn.type = "button";
+    viewBtn.className = "retro-btn latex-view-btn";
+    viewBtn.textContent = "\ud83d\udcc4 Texte brut";
+    viewBtn.addEventListener("click", function () {
+        var targets = [body].concat(Array.prototype.slice.call(item.querySelectorAll(".correction-block")));
+        var switchingToRaw = body.dataset.view === "compiled";
+        targets.forEach(function (el) { toggleLatexView(el); });
+        viewBtn.textContent = switchingToRaw ? "\ud83d\udcdf LaTeX compil\u00e9" : "\ud83d\udcc4 Texte brut";
+    });
+    item.appendChild(viewBtn);
 
     if (isAdmin) {
         var adminActions = document.createElement("div");
