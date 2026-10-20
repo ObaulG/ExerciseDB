@@ -146,15 +146,18 @@ function restoreImages(element, images) {
     });
 }
 
-var LATEXJS_UNSUPPORTED_ENVS = ["exercise", "answer", "solution"];
+var LATEXJS_UNSUPPORTED_ENVS = [
+    "exercise", "answer", "solution", "ex", "exo", "exercice",
+    "question", "questions", "reponse", "reponses",
+    "figure", "table", "minipage",
+];
 
-// Les environnements du package exercise (\begin{Exercise}[Titre] ...,
-// \begin{Answer} ...) ne sont pas connus de latex.js : on les deballe
-// en conservant leur contenu avant la compilation.
+// Les environnements inconnus de latex.js (package exercise, figures)
+// sont deballes en conservant leur contenu.
 function unwrapUnsupportedEnvironments(latex) {
     var text = latex;
     LATEXJS_UNSUPPORTED_ENVS.forEach(function (env) {
-        var beginRe = new RegExp("\\\\begin\\{" + env + "\\}(\\\\\\[[^\\]]*\\])?", "gi");
+        var beginRe = new RegExp("\\\\begin\\{" + env + "\\}(\\\\\\[[^\\]]*\\])?(\\{[^{}]*\\})?", "gi");
         text = text.replace(beginRe, "");
         var endRe = new RegExp("\\\\end\\{" + env + "\\}", "gi");
         text = text.replace(endRe, "\n");
@@ -162,8 +165,81 @@ function unwrapUnsupportedEnvironments(latex) {
     return text;
 }
 
+var LATEXJS_RAW_ENVS = ["tikzpicture", "pspicture", "tabular", "tabular*", "verbatim", "lstlisting", "array"];
+
+// Les environnements dont le contenu n'est pas du LaTeX compilable
+// (figures, tableaux, code) sont extraits et restitues en blocs bruts.
+function extractRawEnvironments(latex) {
+    var blocks = [];
+    var text = latex;
+    LATEXJS_RAW_ENVS.forEach(function (env) {
+        var escaped = env.replace("*", "\\*");
+        var re = new RegExp("\\\\begin\\{" + escaped + "\\}(\\s*\\{[^{}]*\\})?([\\s\\S]*?)\\\\end\\{" + escaped + "\\}", "g");
+        text = text.replace(re, function (m, opts, body) {
+            blocks.push(body);
+            return "@@ENV" + (blocks.length - 1) + "@@";
+        });
+    });
+    return { text: text, blocks: blocks };
+}
+
+function restoreRawBlocks(element, blocks) {
+    blocks.forEach(function (body, idx) {
+        var placeholder = "@@ENV" + idx + "@@";
+        var nodes = collectTextNodes(element);
+        nodes.forEach(function (node) {
+            if (node.nodeValue.indexOf(placeholder) !== -1) {
+                replacePlaceholderInTextNode(node, placeholder, function () {
+                    var pre = document.createElement("pre");
+                    pre.className = "latex-raw-env";
+                    pre.textContent = body.trim();
+                    return pre;
+                });
+            }
+        });
+    });
+}
+
+var LATEXJS_MATH_ENVS = {
+    "align*": "aligned", align: "aligned",
+    "gather*": "gathered", gather: "gathered",
+    "equation*": "", equation: "",
+    "multline*": "", multline: "",
+};
+
+// Les environnements d'alignement ne sont pas connus de latex.js : on les
+// reecrit en mathematiques en affichage \[ ... \], `aligned`/`gathered`
+// etant supportes a l'interieur.
+function convertMathEnvironments(latex) {
+    var text = latex;
+    Object.keys(LATEXJS_MATH_ENVS).forEach(function (env) {
+        var escaped = env.replace("*", "\\*");
+        var re = new RegExp("\\\\begin\\{" + escaped + "\\}([\\s\\S]*?)\\\\end\\{" + escaped + "\\}", "g");
+        var inner = LATEXJS_MATH_ENVS[env];
+        text = text.replace(re, function (m, body) {
+            if (inner) {
+                return "\\[\\begin{" + inner + "}" + body + "\\end{" + inner + "}\\]";
+            }
+            return "\\[" + body + "\\]";
+        });
+    });
+    return text;
+}
+
+function stripUnsupportedPreamble(latex) {
+    var text = latex;
+    text = text.replace(/\\usepackage(\[[^\]]*\])?\s*\{[^{}]*\}/g, "");
+    text = text.replace(/\\includegraphics(\[[^\]]*\])?\s*\{[^{}]*\}/g, "");
+    text = text.replace(/\\footnote\s*\{([^{}]*)\}/g, " ($1)");
+    text = text.replace(/\\maketitle/g, "");
+    text = text.replace(/\\(?:title|author|date)\s*\{[^{}]*\}/g, "");
+    return text;
+}
+
 function parseLatexFragment(latex) {
-    var extracted = extractImages(unwrapUnsupportedEnvironments(latex));
+    var raw = extractRawEnvironments(latex);
+    var prepared = stripUnsupportedPreamble(convertMathEnvironments(unwrapUnsupportedEnvironments(raw.text)));
+    var extracted = extractImages(prepared);
     var generator = new latexjs.HtmlGenerator({ hyphenate: false });
     generator = latexjs.parse(extracted.text, { generator: generator });
     ensureLatexjsStyles(generator);
@@ -174,6 +250,7 @@ function parseLatexFragment(latex) {
         div.appendChild(frag.firstChild);
     }
     restoreImages(div, extracted.images);
+    restoreRawBlocks(div, raw.blocks);
     return div;
 }
 
@@ -200,10 +277,13 @@ function splitMulticols(latex) {
 // Les \item hors itemize/enumerate ne sont pas valides pour latex.js :
 // on encapsule le contenu de multicols dans un itemize si nécessaire.
 function wrapLooseItems(content) {
-    if (/\\item\b/.test(content) && !/\\begin\{(?:itemize|enumerate)\}/.test(content)) {
-        return "\\begin{itemize}\n" + content + "\n\\end{itemize}";
+    if (!/\\item\b/.test(content) || /\\begin\{(?:itemize|enumerate)\}/.test(content)) {
+        return content;
     }
-    return content;
+    var m = /\\item\b/.exec(content);
+    var head = content.slice(0, m.index);
+    var items = content.slice(m.index);
+    return head + "\n\\begin{itemize}\n" + items + "\n\\end{itemize}";
 }
 
 // Convertit un texte LaTeX en élément DOM compilé (latex.js + KaTeX).
@@ -217,7 +297,7 @@ function latexToHtml(latex) {
             cols.appendChild(parseLatexFragment(wrapLooseItems(seg.latex)));
             container.appendChild(cols);
         } else if (seg.latex.trim()) {
-            container.appendChild(parseLatexFragment(seg.latex));
+            container.appendChild(parseLatexFragment(wrapLooseItems(seg.latex)));
         }
     });
     return container;
@@ -236,9 +316,15 @@ function renderLatexContent(el, latex, defaultView) {
             el.dataset.view = "compiled";
         } catch (err) {
             // Repli : texte source avec les mathematiques rendues via KaTeX,
-            // pour que la bascule affiche toujours une difference.
+            // avec un bandeau visible expliquant l'echec de la compilation.
             el.textContent = latex;
             renderMath(el);
+            var notice = document.createElement("div");
+            notice.className = "latex-fallback-notice";
+            notice.textContent = "\u26a0\ufe0f Compilation LaTeX impossible : "
+                + (err && err.message ? err.message : "erreur inconnue")
+                + " \u2014 affichage du texte source.";
+            el.insertBefore(notice, el.firstChild);
             el.dataset.view = "compiled";
         }
     } else {
