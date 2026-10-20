@@ -18,7 +18,7 @@ SYSTEM_PROMPT = SystemPromptGenerator(
     steps=[
         "Identifie chaque exercice individuel dans le texte. Un exercice commence typiquement par « Exercice N », « Ex N », « Exo N », « \\begin{exercice} », « @exercice », « #exercise(...) » (Typst), « Problème N », ou simplement par un changement de section.",
         "Pour les documents Typst, un exercice est délimité par #exercise(title: [...], difficulty: N)[ ... ] et son corrigé par #answer[ ... ]. Le corps de l'exercice est entre crochets ; extrais-le en convertissant les notations mathématiques Typst (plus, minus, times, div, eq, slash, lr(...), bb(...), sqrt(...)) vers le LaTeX équivalent.",
-        "Pour chaque exercice, extrais l'énoncé complet en LaTeX compilable directement par latex.js (paragraphes, itemize, enumerate, $...$ / $$...$$), sans commande d'image.",
+        "Pour chaque exercice, extrais l'énoncé complet en LaTeX compilable directement par latex.js (paragraphes, itemize, enumerate, $...$ / $$...$$).",
         "Si un corrigé ou une solution accompagne l'exercice dans le texte, extrais-le dans le champ correction.",
         "Détermine le type d'exercice parmi : Application directe, Exercice classique, Exercice normal, Problème, Recherche, Démonstration, Problème complet.",
         "Estime le niveau scolaire parmi : CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, 2nde, 1ère, Terminale, Supérieur.",
@@ -31,6 +31,8 @@ SYSTEM_PROMPT = SystemPromptGenerator(
         "Préserve fidèlement le contenu mathématique : ne reformule pas les énoncés, conserve les notations LaTeX.",
         "Si le texte ne contient aucun exercice identifiable, renvoie une liste vide.",
         "Ne fusionme pas plusieurs exercices en un seul : chaque exercice distinct doit être un élément séparé de la liste.",
+        "N'inclus AUCUNE balise d'exercice autour du code (pas de \\begin{exercise}, \\exercise{}, \\exercice, @exercice, #exercise(...) ni titre « Exercice N ») : uniquement le contenu LaTeX situé à l'intérieur de ces balises dans le texte source.",
+        "Retire toute commande ou environnement d'image (\\includegraphics, \\begin{figure}...\\end{figure}, \\image, \\epsfig) du LaTeX extrait : les images ne sont pas représentables. Si le contenu de l'image est important, remplace-le par une courte phrase descriptive entre crochets.",
         "Si un exercice n'a pas de corrigé dans le texte source, laisse le champ correction vide.",
         "Le champ temps_estime est en minutes (entier). Si impossible à estimer, mets 0.",
     ],

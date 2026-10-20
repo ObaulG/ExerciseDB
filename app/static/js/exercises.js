@@ -312,11 +312,12 @@ function buildCard(ex, idx) {
     taEnonce.addEventListener("input", function () { extractedExercises[idx].enonce = taEnonce.value; });
     body.appendChild(taEnonce);
 
+    body.appendChild(buildLatexPreview(taEnonce, ex.enonce, "Aperçu de l'énoncé (latex.js)", "ex-enonce-preview"));
+
     var lblImage = document.createElement("label");
     lblImage.innerHTML = "Image <span class=\"opt\">(optionnelle, au plus une, hors du code LaTeX)</span>";
     body.appendChild(lblImage);
-    var imageUrl = ex.image || null;
-    body.appendChild(buildCardImageRow(function (url) { imageUrl = url; }));
+    body.appendChild(buildCardImageRow(function (url) { ex.image = url; }));
 
     // Titre
     var lblTitre = document.createElement("label");
@@ -399,8 +400,42 @@ function buildCard(ex, idx) {
     taCorrection.addEventListener("input", function () { extractedExercises[idx].correction = taCorrection.value; });
     body.appendChild(taCorrection);
 
+    body.appendChild(buildLatexPreview(taCorrection, ex.correction || "", "Aperçu de la correction (latex.js)", "ex-correction-preview"));
+
     card.appendChild(body);
     return card;
+}
+
+// === Aperçu latex.js rattaché à un champ LaTeX ===
+
+function buildLatexPreview(sourceEl, initialLatex, labelText, className) {
+    var wrap = document.createElement("div");
+    wrap.className = "latex-preview-window window " + className;
+
+    var titleBar = document.createElement("div");
+    titleBar.className = "title-bar";
+    var title = document.createElement("h3");
+    title.className = "title-bar-text";
+    title.textContent = "👁 " + labelText;
+    titleBar.appendChild(title);
+    wrap.appendChild(titleBar);
+
+    var bodyEl = document.createElement("div");
+    bodyEl.className = "window-body latex-preview-body";
+    wrap.appendChild(bodyEl);
+
+    var render = function () {
+        renderLatexContent(bodyEl, sourceEl.value, "compiled");
+    };
+
+    sourceEl.addEventListener("input", render);
+    if (!window.latexjs) {
+        window.addEventListener("load", render, { once: true });
+    }
+    bodyEl.textContent = initialLatex;
+    render();
+
+    return wrap;
 }
 
 function buildThemesBlock(ex, idx) {
@@ -509,7 +544,7 @@ async function saveSelectedExercises() {
                 body: JSON.stringify({
                     name: name,
                     text: ex.enonce.trim(),
-                    image_url: imageUrl || null,
+                    image_url: ex.image || null,
                     type: ex.type || null,
                     niveau: ex.niveau || null,
                     temps_estime: ex.temps ? parseInt(ex.temps, 10) : null,

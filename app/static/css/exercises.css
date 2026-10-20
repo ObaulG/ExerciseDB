@@ -499,3 +499,48 @@ button.primary {
     font-size: 11px;
     padding: 2px 8px;
 }
+
+/* === Aperçu latex.js dans les cartes d'exercice (page d'import) === */
+
+.latex-preview-window {
+    margin: 6px 0 10px 0;
+}
+
+.latex-preview-window .title-bar {
+    padding: 2px 6px;
+}
+
+.latex-preview-window .title-bar-text {
+    font-size: 10px;
+    margin: 0;
+}
+
+.latex-preview-body {
+    padding: 6px 8px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.latex-preview-body:empty::before {
+    content: "Aucun contenu à afficher.";
+    font-style: italic;
+    opacity: 0.6;
+}
+
+.latex-preview-body .latexjs-body {
+    all: unset;
+    display: block;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.latex-preview-body .latexjs-body p {
+    margin: 2px 0;
+}
+
+.latex-preview-body .latexjs-body ol,
+.latex-preview-body .latexjs-body ul {
+    margin: 4px 0 4px 14px;
+    padding-left: 14px;
+    font-size: 11px;
+}
