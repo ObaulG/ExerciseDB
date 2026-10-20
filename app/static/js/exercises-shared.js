@@ -78,8 +78,7 @@ function ensureLatexjsStyles(generator) {
         "html, body { margin: 0; padding: 0; height: 100%; }",
         "body { display: flex; flex-direction: column; align-items: center; padding: 16px; overflow: hidden; }",
         "html { font-family: inherit; text-align: left; }"
-    ].join("
-");
+    ].join("");
     document.head.appendChild(fix);
     latexjsStylesLoaded = true;
 }
