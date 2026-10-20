@@ -146,8 +146,24 @@ function restoreImages(element, images) {
     });
 }
 
+var LATEXJS_UNSUPPORTED_ENVS = ["exercise", "answer", "solution"];
+
+// Les environnements du package exercise (\begin{Exercise}[Titre] ...,
+// \begin{Answer} ...) ne sont pas connus de latex.js : on les deballe
+// en conservant leur contenu avant la compilation.
+function unwrapUnsupportedEnvironments(latex) {
+    var text = latex;
+    LATEXJS_UNSUPPORTED_ENVS.forEach(function (env) {
+        var beginRe = new RegExp("\\\\begin\\{" + env + "\\}(\\\\\\[[^\\]]*\\])?", "gi");
+        text = text.replace(beginRe, "");
+        var endRe = new RegExp("\\\\end\\{" + env + "\\}", "gi");
+        text = text.replace(endRe, "\n");
+    });
+    return text;
+}
+
 function parseLatexFragment(latex) {
-    var extracted = extractImages(latex);
+    var extracted = extractImages(unwrapUnsupportedEnvironments(latex));
     var generator = new latexjs.HtmlGenerator({ hyphenate: false });
     generator = latexjs.parse(extracted.text, { generator: generator });
     ensureLatexjsStyles(generator);
@@ -219,7 +235,11 @@ function renderLatexContent(el, latex, defaultView) {
             el.appendChild(latexToHtml(latex));
             el.dataset.view = "compiled";
         } catch (err) {
+            // Repli : texte source avec les mathematiques rendues via KaTeX,
+            // pour que la bascule affiche toujours une difference.
             el.textContent = latex;
+            renderMath(el);
+            el.dataset.view = "compiled";
         }
     } else {
         el.textContent = latex;
