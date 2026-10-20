@@ -207,24 +207,21 @@ function latexToHtml(latex) {
     return container;
 }
 
-// Affiche un contenu LaTeX dans un élément : version compilée (latex.js)
-// par défaut, texte brut via toggleLatexView. Le texte brut affiche le
-// LaTeX source tel quel, sans transformation ni rendu KaTeX. Repli texte
+// Affiche un contenu LaTeX dans un élément : version brute (source telle
+// quelle) par défaut, version compilée via toggleLatexView. Repli texte
 // brut si latex.js n'est pas chargé ou si le parse échoue.
-function renderLatexContent(el, latex) {
+function renderLatexContent(el, latex, defaultView) {
     el.dataset.latex = latex;
-    el.dataset.view = "compiled";
+    el.dataset.view = "raw";
     el.innerHTML = "";
-    var compiled = false;
-    if (window.latexjs) {
+    if (defaultView !== "raw" && window.latexjs) {
         try {
             el.appendChild(latexToHtml(latex));
-            compiled = true;
+            el.dataset.view = "compiled";
         } catch (err) {
-            compiled = false;
+            el.textContent = latex;
         }
-    }
-    if (!compiled) {
+    } else {
         el.textContent = latex;
     }
 }
