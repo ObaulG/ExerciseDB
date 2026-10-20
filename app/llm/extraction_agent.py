@@ -19,6 +19,7 @@ SYSTEM_PROMPT = SystemPromptGenerator(
         "Identifie chaque exercice individuel dans le texte. Un exercice commence typiquement par « Exercice N », « Ex N », « Exo N », « \\begin{exercice} », « @exercice », « #exercise(...) » (Typst), « Problème N », ou simplement par un changement de section.",
         "Pour les documents Typst, un exercice est délimité par #exercise(title: [...], difficulty: N)[ ... ] et son corrigé par #answer[ ... ]. Le corps de l'exercice est entre crochets ; extrais-le en convertissant les notations mathématiques Typst (plus, minus, times, div, eq, slash, lr(...), bb(...), sqrt(...)) vers le LaTeX équivalent.",
         "Pour chaque exercice, extrais l'énoncé complet en LaTeX compilable directement par latex.js (paragraphes, itemize, enumerate, $...$ / $$...$$).",
+        "L'énoncé comprend TOUJOURS le texte de la consigne (phrases introductives et questions hors listes), pas uniquement les itemize/enumerate : conserve la consigne comme paragraphes, suivis des itemize/enumerate le cas échéant. Ne réduis jamais un exercice au seul contenu de ses listes.",
         "Si un corrigé ou une solution accompagne l'exercice dans le texte, extrais-le dans le champ correction.",
         "Détermine le type d'exercice parmi : Application directe, Exercice classique, Exercice normal, Problème, Recherche, Démonstration, Problème complet.",
         "Estime le niveau scolaire parmi : CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, 2nde, 1ère, Terminale, Supérieur.",
@@ -29,6 +30,7 @@ SYSTEM_PROMPT = SystemPromptGenerator(
     output_instructions=[
         "Réponds toujours en français.",
         "Préserve fidèlement le contenu mathématique : ne reformule pas les énoncés, conserve les notations LaTeX.",
+        "Ne supprime et ne résume jamais le texte de consigne : les phrases d'introduction et les questions textuelles font partie de l'énoncé et doivent apparaître intégralement, à l'identique du texte source.",
         "Si le texte ne contient aucun exercice identifiable, renvoie une liste vide.",
         "Ne fusionme pas plusieurs exercices en un seul : chaque exercice distinct doit être un élément séparé de la liste.",
         "N'inclus AUCUNE balise d'exercice autour du code (pas de \\begin{exercise}, \\exercise{}, \\exercice, @exercice, #exercise(...) ni titre « Exercice N ») : uniquement le contenu LaTeX situé à l'intérieur de ces balises dans le texte source.",
