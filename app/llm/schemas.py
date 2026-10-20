@@ -44,7 +44,7 @@ class ExtractedExerciseItem(BaseIOSchema):
 
     enonce: str = Field(
         ...,
-        description="Énoncé complet de l'exercice, en LaTeX balisé ($...$ / $$...$$) si nécessaire.",
+        description="Énoncé complet de l'exercice, en LaTeX compilable directement par latex.js ($...$ / $$...$$).",
     )
     titre: str = Field(
         default="",
@@ -110,7 +110,7 @@ class CorrectionGenerationInputSchema(BaseIOSchema):
 
     enonce: str = Field(
         ...,
-        description="L'énoncé complet de l'exercice à corriger, en LaTeX balisé si nécessaire.",
+        description="L'énoncé complet de l'exercice à corriger, en LaTeX compilable directement par latex.js.",
     )
 
 
@@ -119,7 +119,7 @@ class CorrectionGenerationOutputSchema(BaseIOSchema):
 
     correction: str = Field(
         ...,
-        description="Corrigé complet et détaillé de l'exercice, avec toutes les étapes de résolution, en LaTeX balisé si nécessaire.",
+        description="Corrigé complet et détaillé de l'exercice, avec toutes les étapes de résolution, en LaTeX compilable directement par latex.js.",
     )
 
 
@@ -128,7 +128,7 @@ class ExerciseEditInputSchema(BaseIOSchema):
     et l'instruction de modification formulée par l'utilisateur."""
 
     name: str = Field(default="", description="Titre actuel de l'exercice, éventuellement vide.")
-    text: str = Field(default="", description="Énoncé actuel de l'exercice, en LaTeX balisé si nécessaire.")
+    text: str = Field(default="", description="Énoncé actuel de l'exercice, en LaTeX compilable directement par latex.js.")
     type: str = Field(default="", description="Type actuel de l'exercice.")
     niveau: str = Field(default="", description="Niveau scolaire actuel.")
     temps_estime: int = Field(default=0, ge=0, description="Temps estimé actuel en minutes.")
@@ -148,14 +148,14 @@ class ExerciseEditOutputItem(BaseIOSchema):
     relire et l'appliquer lui-même au formulaire — aucune écriture en base."""
 
     name: str = Field(default="", description="Titre proposé pour l'exercice.")
-    text: str = Field(default="", description="Énoncé complet proposé, en LaTeX balisé si nécessaire.")
+    text: str = Field(default="", description="Énoncé complet proposé, en LaTeX compilable directement par latex.js.")
     type: str = Field(default="", description="Type proposé parmi la liste de référence.")
     niveau: str = Field(default="", description="Niveau scolaire proposé parmi la liste de référence.")
     temps_estime: int = Field(default=0, ge=0, description="Temps estimé proposé en minutes.")
     themes: list[str] = Field(default_factory=list, description="Thèmes proposés parmi la liste de référence.")
     corrections: list[str] = Field(
         default_factory=list,
-        description="Corrigés proposés (un par entrée), en LaTeX balisé si nécessaire.",
+        description="Corrigés proposés (un par entrée), en LaTeX compilable directement par latex.js.",
     )
     summary: str = Field(
         default="",

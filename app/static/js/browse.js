@@ -74,6 +74,8 @@ function buildExerciseItem(ex) {
     renderLatexContent(body, ex.text, "raw");
     item.appendChild(body);
 
+    appendExerciseImage(item, ex.image_url, ex.name);
+
     (ex.corrections || []).forEach(function (c) {
         var block = document.createElement("div");
         block.className = "correction-block";
@@ -125,7 +127,8 @@ function buildExerciseItem(ex) {
     return item;
 }
 
-// === Insertion d'images dans le formulaire d'édition ===
+// === Image d'exercice (au plus une, déclarée hors du code LaTeX) ===
+
 var editImageFileInput = null;
 
 function ensureEditImageFileInput() {
@@ -138,9 +141,9 @@ function ensureEditImageFileInput() {
     input.addEventListener("change", async function () {
         var file = input.files[0];
         if (!file) return;
-        var textarea = input._targetTextarea;
+        var onDone = input._onUploaded;
         var statusEl = input._targetStatus;
-        statusEl.textContent = "Envoi de l\u2019image\u2026";
+        statusEl.textContent = "Envoi de l'image…";
         try {
             var dataBase64 = await fileToBase64Shared(file);
             var res = await fetch("/api/exercises/images", {
@@ -154,11 +157,11 @@ function ensureEditImageFileInput() {
             });
             if (!res.ok) {
                 var err = await res.json().catch(function () { return { detail: "Erreur" }; });
-                throw new Error(err.detail || "Erreur lors de l\u2019envoi de l\u2019image");
+                throw new Error(err.detail || "Erreur lors de l'envoi de l'image");
             }
             var data = await res.json();
-            insertAtCursorShared(textarea, "![" + file.name.replace(/\.[^.]+$/, "") + "](" + data.url + ")");
-            statusEl.textContent = "Image ins\u00e9r\u00e9e.";
+            onDone(data.url);
+            statusEl.textContent = "Image associée à l'exercice.";
         } catch (err) {
             statusEl.textContent = "Erreur : " + err.message;
         }
@@ -167,24 +170,35 @@ function ensureEditImageFileInput() {
     return input;
 }
 
-function buildImageInsertRow(textarea) {
+function buildImageRow(currentUrl, onChange) {
     var row = document.createElement("div");
     row.className = "image-insert-row";
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "retro-btn image-insert-btn";
-    btn.textContent = "\ud83d\uddbc\ufe0f Ins\u00e9rer une image";
+    btn.textContent = "🖼 Choisir une image";
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "retro-btn";
+    removeBtn.textContent = "✕ Retirer l'image";
+    removeBtn.style.display = currentUrl ? "" : "none";
     var status = document.createElement("span");
     status.className = "inline-status image-status";
     status.style.fontSize = "11px";
     btn.addEventListener("click", function () {
         var input = ensureEditImageFileInput();
-        input._targetTextarea = textarea;
+        input._onUploaded = onChange;
         input._targetStatus = status;
         input.value = "";
         input.click();
     });
+    removeBtn.addEventListener("click", function () {
+        onChange(null);
+        removeBtn.style.display = "none";
+        status.textContent = "";
+    });
     row.appendChild(btn);
+    row.appendChild(removeBtn);
     row.appendChild(status);
     return row;
 }
@@ -198,16 +212,6 @@ function fileToBase64Shared(file) {
         reader.onerror = function () { reject(new Error("Lecture du fichier impossible")); };
         reader.readAsDataURL(file);
     });
-}
-
-function insertAtCursorShared(textarea, text) {
-    var start = textarea.selectionStart != null ? textarea.selectionStart : textarea.value.length;
-    var end = textarea.selectionEnd != null ? textarea.selectionEnd : start;
-    textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
-    var pos = start + text.length;
-    textarea.setSelectionRange(pos, pos);
-    textarea.focus();
-    textarea.dispatchEvent(new Event("input"));
 }
 
 function toggleEditForm(item, ex) {
@@ -237,7 +241,14 @@ function toggleEditForm(item, ex) {
     taText.rows = 4;
     taText.value = ex.text;
     form.appendChild(taText);
-    form.appendChild(buildImageInsertRow(taText));
+
+    var lblImage = document.createElement("label");
+    lblImage.textContent = "Image (au plus une, déclarée hors du code LaTeX)";
+    form.appendChild(lblImage);
+    var imageUrl = ex.image_url || null;
+    form.appendChild(buildImageRow(imageUrl, function (newUrl) {
+        imageUrl = newUrl;
+    }));
 
     // Ligne : Type + Niveau + Temps
     var row = document.createElement("div");
@@ -292,7 +303,6 @@ function toggleEditForm(item, ex) {
     var correctionText = (ex.corrections || []).map(function (c) { return c.text; }).join("\n\n");
     taCorrection.value = correctionText;
     form.appendChild(taCorrection);
-    form.appendChild(buildImageInsertRow(taCorrection));
 
     // Boutons
     var actions = document.createElement("div");
@@ -335,6 +345,7 @@ function toggleEditForm(item, ex) {
                 body: JSON.stringify({
                     name: inpName.value.trim(),
                     text: taText.value.trim(),
+                    image_url: imageUrl || null,
                     type: selType.value || null,
                     niveau: selNiveau.value || null,
                     temps_estime: inpTemps.value ? parseInt(inpTemps.value, 10) : null,

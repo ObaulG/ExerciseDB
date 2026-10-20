@@ -14,6 +14,7 @@ def test_create_and_list_exercise(client):
     payload = {
         "name": "Pythagore",
         "text": "Calcule $c$ tel que $c^2 = a^2 + b^2$",
+        "image_url": None,
         "type": "Application directe",
         "niveau": "3e",
         "temps_estime": 15,
@@ -24,6 +25,7 @@ def test_create_and_list_exercise(client):
     assert response.status_code == 201
     data = response.json()
     assert data["exercise"]["name"] == "Pythagore"
+    assert data["exercise"]["image_url"] is None
     assert data["exercise"]["type"] == "Application directe"
     assert data["exercise"]["niveau"] == "3e"
     assert data["exercise"]["temps_estime"] == 15
@@ -62,8 +64,7 @@ def test_exercises_page(client):
     assert response.status_code == 200
     assert "Extraction d'exercices" in response.text
     assert "Valider et envoyer" in response.text
-    assert "Parser" in response.text
-    assert "Agent LLM" in response.text
+    assert "Parser" not in response.text
     # La page d'import ne contient plus la liste des exercices enregistrés
     assert "Exercices enregistrés" not in response.text
 

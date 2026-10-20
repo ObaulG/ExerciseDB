@@ -4,6 +4,11 @@ Site FastAPI d'assistance aux étudiants en mathématiques, avec un agent LLM
 (AtomicAgents + Mistral) capable d'évaluer les réponses à des problèmes de maths.
 Interface rétro années 2000 (fenêtres type Windows 98), templates Jinja2.
 
+Le texte des exercices et corrigés est stocké en **LaTeX compilable directement
+par [latex.js](https://latex.js.org)** : aucun parsing/pré-traitement n'est
+appliqué. Chaque exercice peut avoir **au plus une image**, déclarée à
+l'extérieur du code LaTeX (colonne `image_url`).
+
 ## Base de données — Supabase (PostgreSQL)
 
 La base de données est **exclusivement en ligne** : un projet Supabase

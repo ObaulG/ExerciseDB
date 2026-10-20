@@ -5,34 +5,15 @@
 
 // === État ===
 
-let extractedExercises = []; // [{ enonce, titre, type, niveau, temps, themes: [], correction, selected }]
-let currentMode = "parser"; // "parser" ou "agent"
+let extractedExercises = []; // [{ enonce, titre, type, niveau, temps, themes: [], correction, image, selected }]
+
 
 // === Initialisation ===
 
 document.addEventListener("DOMContentLoaded", function () {
-    initModeTabs();
     initExtractUI();
     initCardsActions();
 });
-
-// === Onglets de mode (Parser / Agent LLM) ===
-
-function initModeTabs() {
-    var tabs = document.querySelectorAll(".mode-tab");
-    tabs.forEach(function (tab) {
-        tab.addEventListener("click", function () {
-            tabs.forEach(function (t) { t.classList.remove("active"); });
-            tab.classList.add("active");
-            currentMode = tab.dataset.mode;
-            // Mettre à jour le libellé du bouton
-            var btn = document.getElementById("extract-btn");
-            if (btn) {
-                btn.textContent = currentMode === "agent" ? "Extraire avec l'agent LLM" : "Extraire les exercices";
-            }
-        });
-    });
-}
 
 // === Onglets d'extraction ===
 
@@ -126,11 +107,7 @@ function extractExercises() {
         return;
     }
 
-    if (currentMode === "agent") {
-        extractWithLLM(raw, statusEl);
-    } else {
-        extractWithParser(raw, statusEl);
-    }
+    extractWithLLM(raw, statusEl);
 }
 
 async function extractWithLLM(raw, statusEl) {
@@ -174,6 +151,7 @@ async function extractWithLLM(raw, statusEl) {
                 temps: item.temps ? String(item.temps) : "",
                 themes: item.themes || [],
                 correction: item.correction || "",
+                image: "",
                 selected: true,
             };
         });
@@ -187,259 +165,79 @@ async function extractWithLLM(raw, statusEl) {
     btn.disabled = false;
 }
 
-function extractWithParser(raw, statusEl) {
-    var parsed = parseLatexExercises(raw);
+// === Image d'une carte d'exercice (au plus une, déclarée hors du code LaTeX) ===
 
-    if (parsed.length === 0) {
-        statusEl.textContent = "Aucun environnement Exercise détecté. Vérifiez que votre LaTeX utilise \\begin{Exercise}...\\end{Exercise}.";
-        return;
-    }
+var cardImageFileInput = null;
 
-    // Préserve les champs édités manuellement quand l'indice existe déjà.
-    extractedExercises = parsed.map(function (item, i) {
-        var existing = extractedExercises[i];
-        if (!existing) return item;
-        return {
-            enonce: item.enonce,
-            titre: item.titre || existing.titre,
-            type: item.type || existing.type,
-            niveau: item.niveau || existing.niveau,
-            temps: item.temps || existing.temps,
-            themes: item.themes.length ? item.themes : existing.themes.slice(),
-            correction: item.correction || existing.correction,
-            selected: true,
+function ensureCardImageFileInput() {
+    if (cardImageFileInput) return cardImageFileInput;
+    var input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/gif,image/webp,image/svg+xml";
+    input.style.display = "none";
+    document.body.appendChild(input);
+    input.addEventListener("change", async function () {
+        var file = input.files[0];
+        if (!file) return;
+        var statusEl = input._targetStatus;
+        statusEl.textContent = "Envoi de l'image…";
+        try {
+            var dataBase64 = await fileToBase64(file);
+            var res = await fetch("/api/exercises/images", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    filename: file.name,
+                    mime_type: file.type,
+                    data_base64: dataBase64,
+                }),
+            });
+            if (!res.ok) {
+                var err = await res.json().catch(function () { return { detail: "Erreur" }; });
+                throw new Error(err.detail || "Erreur lors de l'envoi de l'image");
+            }
+            var data = await res.json();
+            input._onUploaded(data.url);
+            statusEl.textContent = "Image associée.";
+        } catch (err) {
+            statusEl.textContent = "Erreur : " + err.message;
+        }
+    });
+    cardImageFileInput = input;
+    return input;
+}
+
+function buildCardImageRow(onChange) {
+    var row = document.createElement("div");
+    row.className = "image-insert-row";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "retro-btn image-insert-btn";
+    btn.textContent = "🖼️ Choisir une image";
+    var status = document.createElement("span");
+    status.className = "inline-status image-status";
+    status.style.fontSize = "11px";
+    btn.addEventListener("click", function () {
+        var input = ensureCardImageFileInput();
+        input._onUploaded = onChange;
+        input._targetStatus = status;
+        input.value = "";
+        input.click();
+    });
+    row.appendChild(btn);
+    row.appendChild(status);
+    return row;
+}
+
+function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () {
+            resolve(String(reader.result).split(",")[1] || "");
         };
+        reader.onerror = function () { reject(new Error("Lecture du fichier impossible")); };
+        reader.readAsDataURL(file);
     });
-
-    renderCards();
-    statusEl.textContent = extractedExercises.length + " exercice(s) extrait(s).";
-}
-
-// === Parser LaTeX — package exercise (environnements Exercise / Answer) ===
-
-function parseLatexExercises(text) {
-    var exercises = [];
-
-    // Détecte \begin{Exercise}[titre optionnel] ... \end{Exercise}
-    var envRe = /\\begin\s*\{Exercise\}\s*(\[[^\]]*\])?/g;
-    var match;
-
-    while ((match = envRe.exec(text)) !== null) {
-        var optionalArg = match[1] || "";
-        var contentStart = match.index + match[0].length;
-
-        // Trouve le \end{Exercise} correspondant (gère l'imbrication)
-        var contentEnd = findLatexEnvironmentEnd(text, contentStart, "Exercise");
-        if (contentEnd === -1) continue;
-
-        var body = text.slice(contentStart, contentEnd);
-
-        // Titre depuis l'argument optionnel [titre]
-        var titre = "";
-        if (optionalArg) {
-            titre = optionalArg.replace(/^\[|\]$/g, "").trim();
-        }
-
-        // Extrait la correction depuis l'environnement Answer imbriqué
-        var correction = extractLatexAnswer(body);
-
-        // Nettoie le corps : retire les blocs Answer
-        var enonce = stripLatexAnswers(body).trim();
-
-        // Si pas de titre dans l'argument optionnel, essaie de le deviner
-        if (!titre) {
-            titre = extractTitle(enonce);
-        }
-
-        exercises.push({
-            enonce: enonce,
-            titre: titre,
-            type: guessType(enonce),
-            niveau: guessNiveau(enonce),
-            temps: "",
-            themes: guessThemes(enonce),
-            correction: correction,
-            selected: true,
-            _start: match.index,
-            _end: contentEnd + "\\end{Exercise}".length,
-        });
-
-        envRe.lastIndex = contentEnd + "\\end{Exercise}".length;
-    }
-
-    // Associe les environnements Answer orphelins (hors d'un Exercise)
-    // au dernier Exercise précédent — c'est le mode answerdelayed du package.
-    var ansRe = /\\begin\s*\{Answer\}\s*(\[[^\]]*\])?/g;
-    while ((match = ansRe.exec(text)) !== null) {
-        var ansContentStart = match.index + match[0].length;
-        var ansContentEnd = findLatexEnvironmentEnd(text, ansContentStart, "Answer");
-        if (ansContentEnd === -1) continue;
-
-        // Vérifie si cet Answer est déjà dans un Exercise (imbriqué)
-        var insideExercise = exercises.some(function (ex) {
-            return match.index >= ex._start && match.index < ex._end;
-        });
-        if (insideExercise) continue;
-
-        // Associe au dernier Exercise précédent
-        var target = null;
-        for (var i = exercises.length - 1; i >= 0; i--) {
-            if (exercises[i]._end <= match.index) {
-                target = exercises[i];
-                break;
-            }
-        }
-        if (target) {
-            var ansBody = text.slice(ansContentStart, ansContentEnd).trim();
-            if (target.correction) {
-                target.correction += "\n\n" + ansBody;
-            } else {
-                target.correction = ansBody;
-            }
-        }
-
-        ansRe.lastIndex = ansContentEnd + "\\end{Answer}".length;
-    }
-
-    // Nettoie les champs internes de positionnement
-    exercises.forEach(function (ex) {
-        delete ex._start;
-        delete ex._end;
-    });
-
-    return exercises;
-}
-
-function findLatexEnvironmentEnd(text, start, envName) {
-    var openTag = "\\begin{" + envName + "}";
-    var closeTag = "\\end{" + envName + "}";
-    var depth = 1;
-    var pos = start;
-
-    while (pos < text.length) {
-        var nextOpen = text.indexOf(openTag, pos);
-        var nextClose = text.indexOf(closeTag, pos);
-
-        if (nextClose === -1) return -1;
-
-        if (nextOpen !== -1 && nextOpen < nextClose) {
-            depth++;
-            pos = nextOpen + openTag.length;
-        } else {
-            depth--;
-            if (depth === 0) return nextClose;
-            pos = nextClose + closeTag.length;
-        }
-    }
-    return -1;
-}
-
-function extractLatexAnswer(body) {
-    var correction = "";
-
-    // \begin{Answer}[optionnel] ... \end{Answer}
-    var ansRe = /\\begin\s*\{Answer\}\s*(\[[^\]]*\])?/g;
-    var match;
-    while ((match = ansRe.exec(body)) !== null) {
-        var contentStart = match.index + match[0].length;
-        var contentEnd = findLatexEnvironmentEnd(body, contentStart, "Answer");
-        if (contentEnd === -1) continue;
-        if (correction) correction += "\n\n";
-        correction += body.slice(contentStart, contentEnd).trim();
-    }
-
-    return correction.trim();
-}
-
-function stripLatexAnswers(body) {
-    var out = body;
-
-    // Retire \begin{Answer}...\end{Answer}
-    var ansRe = /\\begin\s*\{Answer\}\s*(\[[^\]]*\])?/g;
-    var match;
-    while ((match = ansRe.exec(out)) !== null) {
-        var contentStart = match.index + match[0].length;
-        var contentEnd = findLatexEnvironmentEnd(out, contentStart, "Answer");
-        if (contentEnd === -1) continue;
-        out = out.slice(0, match.index) + out.slice(contentEnd + "\\end{Answer}".length);
-        ansRe.lastIndex = match.index;
-    }
-
-    return out;
-}
-
-// === Devinettes automatiques ===
-
-function extractTitle(text) {
-    var m = text.match(/^(?:Exercice|Ex\.?|Exo\.?)\s*\d+\s*[:..\-—]\s*(.+)$/im);
-    if (m && m[1].trim().length > 3 && m[1].trim().length < 100) {
-        return m[1].trim();
-    }
-    return "";
-}
-
-function guessType(text) {
-    var lower = text.toLowerCase();
-    if (/d[ée]montr|prouv|montrer\s+que/.test(lower)) return "Démonstration";
-    if (/probl[èe]me/.test(lower)) return "Problème";
-    if (/recherch|investig|explor/.test(lower)) return "Recherche";
-    if (/calcul(er)?\s+|effectu|comput/.test(lower) && text.length < 200) return "Application directe";
-    return "Exercice normal";
-}
-
-function guessNiveau(text) {
-    var lower = text.toLowerCase();
-    var explicit = [
-        [/\bcp\b/, "CP"], [/\bce1\b/, "CE1"], [/\bce2\b/, "CE2"],
-        [/\bcm1\b/, "CM1"], [/\bcm2\b/, "CM2"],
-        [/\b6e\b|sixi[èe]me/, "6e"], [/\b5e\b|cinqui[èe]me/, "5e"],
-        [/\b4e\b|quatri[èe]me/, "4e"], [/\b3e\b|troisi[èe]me/, "3e"],
-        [/\b2nde\b|seconde/, "2nde"], [/\b1[èe]re\b|premi[èe]re/, "1ère"],
-        [/\bterminale\b/, "Terminale"],
-    ];
-    for (var i = 0; i < explicit.length; i++) {
-        if (explicit[i][0].test(lower)) return explicit[i][1];
-    }
-    if (/int[ée]grale|primitive|d[ée]riv[ée]e|suite\s+r[ée]currente|r[ée]currence|matrice|espace\s+vectoriel/.test(lower)) return "Terminale";
-    if (/d[ée]riv[ée]e|limite\s+de\s+fonction|nombre\s+d[ée]riv[ée]|fonction\s+exponentielle|fonction\s+logarithme/.test(lower)) return "1ère";
-    if (/fonction|second\s+degr[ée]|polyn[ôo]me|vecteur|rep[èe]re\s+orthonorm[ée]|syst[èe]me\s+d'[ée]quation/.test(lower)) return "2nde";
-    if (/th[ée]or[èe]me\s+de\s+pythagore|r[ée]ciproque|racine\s+carr[ée]|[ée]quation\s+produit|factorisation|identit[ée]\s+remarquable|trigonom[ée]trie/.test(lower)) return "3e";
-    if (/th[ée]or[èe]me\s+de\s+thal[èe]s|puissance|notion\s+de\s+fonction|probabilit[ée]|pythagore/.test(lower)) return "4e";
-    if (/proportionnalit[ée]|pourcentage|[ée]chelle|calcul\s+litt[ée]ral\s+simple|relatif|fraction\s+op[ée]ration/.test(lower)) return "5e";
-    if (/fraction\s+simple|d[ée]cimal|op[ée]ration\s+[ée]l[ée]mentaire|p[ée]rim[èe]tre|aire\s+rectangle|droite\s+parall[èe]le/.test(lower)) return "6e";
-    return "";
-}
-
-function guessThemes(text) {
-    var lower = text.toLowerCase();
-    var themes = [];
-    var rules = [
-        [/fraction|\\frac|num[ée]rateur|d[ée]nominateur/, "Fractions"],
-        [/triangle|cercle|angle|polygone|parall[èe]l|perpendiculair|aire|p[ée]rim[èe]tre/, "Géométrie"],
-        [/pythagore/, "Théorème de Pythagore"],
-        [/thal[èe]s/, "Théorème de Thalès"],
-        [/probabilit|loi\s+(de|binomiale|uniforme)|[ée]v[èe]nement|d[ée]\s+lanc|pi[èe]ce/, "Probabilités"],
-        [/fonction|\\f\(|courbe|repr[ée]sentation\s+graphique/, "Fonctions"],
-        [/[ée]quation|in[ée]quation|r[ée]soudre|x\s*=|inconnue/, "Équations et inéquations"],
-        [/suite|u_n|r[ée]currence|raison/, "Suites"],
-        [/sin|cos|tan|radian/, "Trigonométrie"],
-        [/vecteur|\\vec/, "Vecteurs"],
-        [/d[ée]riv[ée]|f'\(|tangente\s+[àa]\s+la\s+courbe/, "Dérivation"],
-        [/int[ée]grale|primitive|\\int/, "Intégrales"],
-        [/d[ée]cimal|virgule/, "Nombres décimaux"],
-        [/proportionnal|tableau|[ée]chelle|pourcentage/, "Proportionnalité"],
-        [/statistique|moyenne|m[ée]diane|[ée]tendue|effectif/, "Statistiques"],
-        [/relatif|n[ée]gatif|oppos[ée]/, "Nombres relatifs"],
-        [/puissance|exposant|10\^/, "Puissances"],
-        [/racine\s+carr[ée]|\\sqrt/, "Racines carrées"],
-        [/litt[ée]ral|d[ée]velopper|factoriser|identit[ée]\s+remarquable/, "Calcul littéral"],
-        [/logique|raisonnement|implique|si\s+et\s+seulement\s+si|contrapos[ée]e|r[ée]ciproque/, "Logique et raisonnement"],
-        [/\+\s*\d|-\s*\d|\d\s*[+\-]\s*\d|op[ée]ration/, "Calcul — opérations élémentaires"],
-    ];
-    rules.forEach(function (rule) {
-        if (rule[0].test(lower)) themes.push(rule[1]);
-    });
-    return themes.filter(function (v, i, a) { return a.indexOf(v) === i; }).slice(0, 3);
 }
 
 // === Rendu des cartes ===
@@ -510,9 +308,15 @@ function buildCard(ex, idx) {
     var taEnonce = document.createElement("textarea");
     taEnonce.rows = 3;
     taEnonce.value = ex.enonce;
-    taEnonce.placeholder = "Énoncé de l'exercice (LaTeX autorisé)...";
+    taEnonce.placeholder = "Énoncé de l'exercice, en LaTeX compilable par latex.js...";
     taEnonce.addEventListener("input", function () { extractedExercises[idx].enonce = taEnonce.value; });
     body.appendChild(taEnonce);
+
+    var lblImage = document.createElement("label");
+    lblImage.innerHTML = "Image <span class=\"opt\">(optionnelle, au plus une, hors du code LaTeX)</span>";
+    body.appendChild(lblImage);
+    var imageUrl = ex.image || null;
+    body.appendChild(buildCardImageRow(function (url) { imageUrl = url; }));
 
     // Titre
     var lblTitre = document.createElement("label");
@@ -591,7 +395,7 @@ function buildCard(ex, idx) {
     var taCorrection = document.createElement("textarea");
     taCorrection.rows = 3;
     taCorrection.value = ex.correction || "";
-    taCorrection.placeholder = "Texte du corrigé (LaTeX autorisé)...";
+    taCorrection.placeholder = "Texte du corrigé, en LaTeX compilable par latex.js...";
     taCorrection.addEventListener("input", function () { extractedExercises[idx].correction = taCorrection.value; });
     body.appendChild(taCorrection);
 
@@ -651,7 +455,7 @@ function initCardsActions() {
     document.getElementById("add-card-btn").addEventListener("click", function () {
         extractedExercises.push({
             enonce: "", titre: "", type: "", niveau: "", temps: "",
-            themes: [], correction: "", selected: true,
+            themes: [], correction: "", image: "", selected: true,
         });
         renderCards();
     });
@@ -705,6 +509,7 @@ async function saveSelectedExercises() {
                 body: JSON.stringify({
                     name: name,
                     text: ex.enonce.trim(),
+                    image_url: imageUrl || null,
                     type: ex.type || null,
                     niveau: ex.niveau || null,
                     temps_estime: ex.temps ? parseInt(ex.temps, 10) : null,

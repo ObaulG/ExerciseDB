@@ -1,7 +1,7 @@
 // === Constantes (partagées avec exercises.js) ===
 
-// Les constantes (TYPES_EXERCICE, NIVEAUX_SCOLAIRES, THEMES_DISPONIBLES) et
-// renderMath() sont définies dans exercises-shared.js, chargé avant ce fichier.
+// Les constantes (TYPES_EXERCICE, NIVEAUX_SCOLAIRES, THEMES_DISPONIBLES), le rendu
+// latex.js et la gestion d'image sont définis dans exercises-shared.js.
 
 // === État ===
 
@@ -19,7 +19,9 @@ document.addEventListener("DOMContentLoaded", function () {
     renderPreview();
 });
 
-// === Insertion d'images ===
+// === Image de l'exercice (au plus une, déclarée hors du code LaTeX) ===
+let exerciseImage = null;
+
 function initImageInsert() {
     var fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -27,21 +29,25 @@ function initImageInsert() {
     fileInput.style.display = "none";
     document.body.appendChild(fileInput);
 
-    document.querySelectorAll(".image-insert-btn").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-            fileInput.dataset.target = btn.dataset.target;
-            fileInput.value = "";
-            fileInput.click();
-        });
+    var btn = document.getElementById("f-image-btn");
+    var removeBtn = document.getElementById("f-image-remove");
+    var statusEl = document.getElementById("f-image-status");
+
+    btn.addEventListener("click", function () {
+        fileInput.value = "";
+        fileInput.click();
+    });
+
+    removeBtn.addEventListener("click", function () {
+        exerciseImage = null;
+        updateImageUI();
+        renderPreview();
     });
 
     fileInput.addEventListener("change", async function () {
         var file = fileInput.files[0];
         if (!file) return;
-        var targetId = fileInput.dataset.target;
-        var statusEl = document.querySelector('.image-status[data-target="' + targetId + '"]');
-        var textarea = document.getElementById(targetId);
-        statusEl.textContent = "Envoi de l’image…";
+        statusEl.textContent = "Envoi de l'image…";
         try {
             var dataBase64 = await fileToBase64(file);
             var res = await fetch("/api/exercises/images", {
@@ -55,16 +61,28 @@ function initImageInsert() {
             });
             if (!res.ok) {
                 var err = await res.json().catch(function () { return { detail: "Erreur" }; });
-                throw new Error(err.detail || "Erreur lors de l’envoi de l’image");
+                throw new Error(err.detail || "Erreur lors de l'envoi de l'image");
             }
             var data = await res.json();
-            insertAtCursor(textarea, "![" + file.name.replace(/\.[^.]+$/, "") + "](" + data.url + ")");
-            statusEl.textContent = "Image insérée.";
+            exerciseImage = data.url;
+            statusEl.textContent = "Image associée à l'exercice.";
+            updateImageUI();
             renderPreview();
         } catch (err) {
             statusEl.textContent = "Erreur : " + err.message;
         }
     });
+
+    updateImageUI();
+}
+
+function updateImageUI() {
+    var removeBtn = document.getElementById("f-image-remove");
+    var statusEl = document.getElementById("f-image-status");
+    removeBtn.style.display = exerciseImage ? "" : "none";
+    if (!exerciseImage && !statusEl.textContent.startsWith("Erreur")) {
+        statusEl.textContent = "";
+    }
 }
 
 function fileToBase64(file) {
@@ -76,16 +94,6 @@ function fileToBase64(file) {
         reader.onerror = function () { reject(new Error("Lecture du fichier impossible")); };
         reader.readAsDataURL(file);
     });
-}
-
-function insertAtCursor(textarea, text) {
-    var start = textarea.selectionStart != null ? textarea.selectionStart : textarea.value.length;
-    var end = textarea.selectionEnd != null ? textarea.selectionEnd : start;
-    textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
-    var pos = start + text.length;
-    textarea.setSelectionRange(pos, pos);
-    textarea.focus();
-    textarea.dispatchEvent(new Event("input"));
 }
 
 // === Sélecteurs Type / Niveau ===
@@ -165,6 +173,7 @@ function renderPreview() {
     var previewCorrection = document.getElementById("preview-correction");
 
     fillPreview(previewText, text, "Énoncé vide — remplis le formulaire.");
+    appendExerciseImage(previewText, exerciseImage);
     fillPreview(previewCorrection, correction, "Aucune correction saisie.", true);
 }
 
@@ -188,6 +197,7 @@ function getFormState() {
     return {
         name: document.getElementById("f-name").value,
         text: document.getElementById("f-text").value,
+        image_url: exerciseImage,
         type: document.getElementById("f-type").value,
         niveau: document.getElementById("f-niveau").value,
         temps_estime: document.getElementById("f-temps").value,
@@ -206,6 +216,8 @@ function applyState(state) {
     document.getElementById("f-niveau").value = state.niveau || "";
     document.getElementById("f-temps").value = state.temps_estime != null ? String(state.temps_estime) : "";
     themes = Array.isArray(state.themes) ? state.themes.slice() : [];
+    exerciseImage = state.image_url || null;
+    updateImageUI();
     // L'IA peut renvoyer plusieurs corrigés : on concatène avec une séparatrice.
     var corrections = Array.isArray(state.corrections) ? state.corrections : [];
     document.getElementById("f-correction").value = corrections.join("\n\n");
@@ -235,6 +247,8 @@ function resetForm() {
     document.getElementById("f-niveau").value = "";
     document.getElementById("f-temps").value = "";
     document.getElementById("f-correction").value = "";
+    exerciseImage = null;
+    updateImageUI();
     themes = [];
     renderThemesBlock();
     renderPreview();
@@ -267,6 +281,7 @@ async function saveExercise() {
     var payload = {
         name: name,
         text: text,
+        image_url: state.image_url || null,
         type: state.type || null,
         niveau: state.niveau || null,
         temps_estime: state.temps_estime ? parseInt(state.temps_estime, 10) : null,

@@ -1,17 +1,22 @@
 -- Schéma PostgreSQL (Supabase) de la base d'exercices.
--- Le texte des exercices et corrigés est stocké en LaTeX balisé ($...$ / $$...$$),
--- rendu côté navigateur avec KaTeX.
+-- Le texte des exercices et corrigés est stocké en LaTeX compilable tel quel
+-- par latex.js (https://latex.js.org) côté navigateur.
+-- Une éventuelle image (au plus une par exercice) est déclarée à l'extérieur du
+-- code LaTeX, dans la colonne image_url.
 -- À exécuter dans le SQL Editor de Supabase, ou automatiquement via db.init_db().
 
 CREATE TABLE IF NOT EXISTS exercise (
     id          SERIAL PRIMARY KEY,
     name        TEXT NOT NULL,
     text        TEXT NOT NULL,
+    image_url   TEXT,
     type        TEXT,
     niveau      TEXT,
     temps_estime INTEGER,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE exercise ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 CREATE TABLE IF NOT EXISTS correction (
     id          SERIAL PRIMARY KEY,
