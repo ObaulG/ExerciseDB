@@ -35,7 +35,7 @@ body {
             transparent 2px,
             transparent 8px
         );
-    font-family: "MS PGothic", "ＭＳ Ｐゴシック", "MS Gothic", "ＭＳ ゴシック", "Hiragino Kaku Gothic Pro", "ヒラギノ角ゴ Pro W3", "Meiryo", "メイリオ", "Osaka", "Noto Sans CJK JP", "Verdana", sans-serif;
+    font-family: "Trebuchet MS", "Tahoma", "Verdana", "Arial", sans-serif;
     font-size: 13px;
     color: var(--texte);
     height: 100vh;
