@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Maths — À propos</title>
+    <link rel="stylesheet" href="/static/css/retro.css">
+    <link rel="stylesheet" href="/static/css/about.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+</head>
+<body>
+    <header class="site-banner">
+        <h1>Assistant Maths</h1>
+        <div class="site-tagline">Évaluateur de réponses &amp; base d'exercices</div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">Menu</div>
+            <div class="sidebar-auth">
+                {% include "_header.html.j2" %}
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">💬 Chat</a>
+                <div class="nav-group">
+                    <span class="nav-group-title">📚 Exercices</span>
+                    <a href="/exercises">📥 Importer</a>
+                    <a href="/browse">👁️ Consulter</a>
+                    <a href="/create">✨ Créer</a>
+                    <a href="/deepen">🔬 Approfondir</a>
+                </div>
+                <a href="/training">✏️ Entraînement</a>
+                <a href="/settings">⚙️ Paramètres</a>
+                <a href="/profile">👤 Profil</a>
+                <a href="/about" class="active">ℹ️ À propos</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="content-header">
+                <h1>ℹ️ À propos du projet</h1>
+            </div>
+
+            <div class="content-body">
+                <div class="window" id="about-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">📋 Présentation générale</h2>
+                    </div>
+
+                    <div class="window-body about-body">
+                        <p class="about-intro">
+                            <strong>Assistant Maths</strong> est un prototype de gestion de base de données d'exercices de
+                            mathématiques utilisant des outils basés sur IA
+                        </p>
+                        <p>
+                            MistralAI est utilisé ici, avec le modèle ministral-14B-2512.
+                            Nous n'enverrons pas de donnée personnelle, ni les pseudonymes.
+                            A ce jour (23/10/26), les comptes avec le Free Plan de Mistral permettent l'utilisation d'une
+                            API à travers une clef. Ainsi, pour éviter tout abus, nous vous demanderons de renseigner votre
+                            propre clef API Mistral dans l'onglet Paramètres. Cette clef ne sera pas sauvegardée sur le serveur,
+                            elle sera uniquement enregistrée localement dans votre navigateur et transmise lorsque vous
+                            effectuerez une requête qui nécessite l'appel à un LLM (et nous ne la conservons que pendant la durée
+                            de l'appel).
+                        </p>
+                        <div class="about-section">
+                            <h3>🚀 Fonctionnalités</h3>
+                            <ul class="feature-list">
+                                <li>
+                                    <span class="feature-icon">📥</span>
+                                    <strong>Import d'exercices</strong> — ajoutez des
+                                    exercices à partir de documents existants. Utilisez l'agent
+                                    importateur pour délimiter automatiquement les différents exercices
+                                    à partir d'un texte, d'un pdf ou d'un fichier LaTeX
+                                </li>
+                                <li>
+                                    <span class="feature-icon">✨</span>
+                                    <strong>Création</strong> — rédigez un exercice
+                                    directement en ligne avec son corrigé, ainsi que plusieurs métadonnées,
+                                    et obtenez un coup de pouce pour la conception, la rédaction ou la mise en page
+                                    avec un agent dédié.
+
+                                </li>
+                                <li>
+                                    <span class="feature-icon">✏️</span>
+                                    <strong>Entraînement</strong> — sélectionnez
+                                    jusqu'à 6 exercices, répondez, et obtenez une
+                                    évaluation batch avec corrigé de référence.
+                                </li>
+                                <li>
+                                    <span class="feature-icon">👤</span>
+                                    <strong>Profil étudiant</strong> — suivez votre
+                                    progression et votre historique d'évaluations.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="about-section">
+                            <h3>🛠️ Technologies</h3>
+                            <table class="tech-table">
+                                <tr>
+                                    <td class="tech-label">Backend</td>
+                                    <td>Python, FastAPI, Uvicorn</td>
+                                </tr>
+                                <tr>
+                                    <td class="tech-label">Agent LLM</td>
+                                    <td>AtomicAgents + Mistral AI</td>
+                                </tr>
+                                <tr>
+                                    <td class="tech-label">Base de données</td>
+                                    <td>Supabase (PostgreSQL)</td>
+                                </tr>
+                                <tr>
+                                    <td class="tech-label">Templates</td>
+                                    <td>Jinja2</td>
+                                </tr>
+                                <tr>
+                                    <td class="tech-label">Rendu LaTeX</td>
+                                    <td>latex.js (côté navigateur)</td>
+                                </tr>
+                                <tr>
+                                    <td class="tech-label">Style</td>
+                                    <td>Interface rétro années 2000</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="about-section">
+                            <h3>📊 Schéma de la base de données</h3>
+                            <p class="about-text">
+                                La base contient les exercices (énoncé LaTeX, image
+                                optionnelle, type, niveau, thème), leurs corrigés, les
+                                utilisateurs (pseudo, mot de passe haché) et
+                                l'historique d'évaluations. Le schéma est appliqué
+                                automatiquement au démarrage si la variable
+                                <code>INIT_DB</code> est activée.
+                            </p>
+                        </div>
+
+                        <div class="about-section">
+                            <h3>📌 Comment démarrer</h3>
+                            <ol class="about-steps">
+                                <li>
+                                    Installez les dépendances :
+                                    <code>pip install -r requirements.txt</code>
+                                </li>
+                                <li>
+                                    Configurez vos variables d'environnement
+                                    (<code>MISTRAL_API_KEY</code>,
+                                    <code>DATABASE_URL</code>).
+                                </li>
+                                <li>
+                                    Lancez le serveur :
+                                    <code>uvicorn app.main:app --reload</code>
+                                </li>
+                                <li>
+                                    Ouvrez
+                                    <a href="http://127.0.0.1:8000/">http://127.0.0.1:8000/</a>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="status-bar">
+                        <span class="status-field">Assistant Maths v1.0</span>
+                        <span class="status-field">FastAPI + Mistral AI</span>
+                        <span class="status-field">Supabase</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script defer src="/static/js/auth.js"></script>
+</body>
+</html>

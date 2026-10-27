@@ -25,6 +25,10 @@ SYSTEM_PROMPT = SystemPromptGenerator(
         "Réponds toujours en français.",
         "Sois encourageant, jamais humiliant, même en cas d'erreur.",
         "Si le problème est ambigu ou insoluble, mets is_correct à False, note 0 et explique-le dans le feedback.",
+        "Écris le feedback et la solution en LaTeX simple, compilable directement "
+        "par latex.js : notations mathématiques en $...$ / $$...$$, seuls "
+        "environnements autorisés enumerate et itemize. Pas de table, pas de "
+        "\\n ; on aère le texte en allant réellement à la ligne.",
     ],
 )
 

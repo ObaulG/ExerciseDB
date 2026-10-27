@@ -1,0 +1,171 @@
+/* === Page Approfondir === */
+
+#source-window,
+#instruction-window,
+#variations-window,
+#form-window,
+#preview-window {
+    max-width: 100%;
+    margin-bottom: 12px;
+}
+
+/* --- Exercice source --- */
+
+.source-loading,
+.source-empty {
+    text-align: center;
+    padding: 16px;
+    color: var(--bleu);
+    font-style: italic;
+}
+
+.source-empty a {
+    display: inline-block;
+    margin-top: 8px;
+    text-decoration: none;
+}
+
+.source-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.source-title {
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--vert-fonce);
+}
+
+.source-badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.source-badge {
+    display: inline-block;
+    background: var(--bleu-pale);
+    border: 1px solid var(--bleu-fonce);
+    color: var(--bleu-fonce);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+}
+
+.source-text {
+    background: #ffffff;
+    border: 2px solid;
+    border-top-color: var(--bleu-clair);
+    border-left-color: var(--bleu-clair);
+    border-right-color: var(--bleu-fonce);
+    border-bottom-color: var(--bleu-fonce);
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: auto;
+    min-height: 40px;
+}
+
+/* --- Fenêtre instruction --- */
+
+#instruction-window label {
+    font-weight: bold;
+    font-size: 11px;
+    color: var(--vert-fonce);
+    display: block;
+    margin-bottom: 3px;
+}
+
+#variation-instruction {
+    width: 100%;
+    background: #ffffff;
+    border: 2px solid;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+}
+
+/* --- Variantes --- */
+
+.variations-help {
+    font-size: 11px;
+    color: var(--bleu-fonce);
+    margin: 0 0 8px 0;
+}
+
+.variation-card {
+    border: 2px solid var(--bleu-fonce);
+    background: #ffffff;
+    padding: 8px;
+    margin-bottom: 10px;
+    transition: border-color 0.15s;
+}
+
+.variation-card.selected {
+    border-color: var(--vert-fonce);
+    background: var(--vert-pale);
+}
+
+.variation-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.variation-title {
+    font-weight: bold;
+    font-size: 13px;
+    color: var(--vert-fonce);
+}
+
+.variation-badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.variation-summary {
+    font-size: 11px;
+    color: var(--bleu-fonce);
+    font-style: italic;
+    margin-bottom: 6px;
+}
+
+.variation-themes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.variation-preview {
+    background: var(--bleu-pale);
+    border: 1px solid var(--bleu-fonce);
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 6px;
+}
+
+.variation-select-btn {
+    margin-top: 4px;
+}
+
+#generate-btn:disabled,
+#save-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}

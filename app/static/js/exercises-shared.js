@@ -67,8 +67,7 @@ function ensureLatexjsStyles(generator) {
     latexjsStylesLoaded = true;
 }
 
-// Compile un texte LaTeX en élément DOM via latex.js (rend les mathématiques
-// avec KaTeX). Le code doit être directement compilable : il est passé tel
+// Compile un texte LaTeX en élément DOM via latex.js. Le code doit être directement compilable : il est passé tel
 // quel au parseur.
 function latexToHtml(latex) {
     var generator = new latexjs.HtmlGenerator({ hyphenate: false });
@@ -92,6 +91,7 @@ function renderLatexContent(el, latex, defaultView) {
     el.innerHTML = "";
     if (defaultView !== "raw" && window.latexjs) {
         try {
+            console.log("displaying with latexjs");
             el.appendChild(latexToHtml(latex));
             el.dataset.view = "compiled";
         } catch (err) {

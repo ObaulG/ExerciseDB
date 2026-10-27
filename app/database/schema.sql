@@ -63,3 +63,21 @@ CREATE TABLE IF NOT EXISTS session (
     user_id    INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- --- Modèle de compétences : tentatives d'évaluation ---
+
+CREATE TABLE IF NOT EXISTS attempt (
+    id                 SERIAL PRIMARY KEY,
+    user_id            INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    exercise_id        INTEGER NOT NULL REFERENCES exercise(id) ON DELETE CASCADE,
+    student_answer     TEXT NOT NULL,
+    is_correct         BOOLEAN NOT NULL,
+    score              INTEGER NOT NULL,
+    feedback           TEXT NOT NULL,
+    corrected_solution TEXT NOT NULL,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_attempt_user ON attempt(user_id);
+CREATE INDEX IF NOT EXISTS idx_attempt_exercise ON attempt(exercise_id);
+CREATE INDEX IF NOT EXISTS idx_attempt_user_exercise ON attempt(user_id, exercise_id);

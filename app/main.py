@@ -10,7 +10,7 @@ from pathlib import Path
 from app.auth_routes import router as auth_router
 from app.database import db
 from app.exercise_routes import router as exercise_router
-from app.routes import router as api_router
+from app.routes import router as api_router, profile_router
 
 app = FastAPI(title="Assistant Maths")
 
@@ -30,6 +30,7 @@ if _database_url:
 app.include_router(api_router)
 app.include_router(exercise_router)
 app.include_router(auth_router)
+app.include_router(profile_router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -52,6 +53,11 @@ async def create_page(request: Request):
     return templates.TemplateResponse(request, "create.html.j2")
 
 
+@app.get("/deepen", response_class=HTMLResponse)
+async def deepen_page(request: Request):
+    return templates.TemplateResponse(request, "deepen.html.j2")
+
+
 @app.get("/profile", response_class=HTMLResponse)
 async def profile_page(request: Request):
     return templates.TemplateResponse(request, "profile.html.j2")
@@ -65,6 +71,11 @@ async def settings_page(request: Request):
 @app.get("/training", response_class=HTMLResponse)
 async def training_page(request: Request):
     return templates.TemplateResponse(request, "training.html.j2")
+
+
+@app.get("/about", response_class=HTMLResponse)
+async def about_page(request: Request):
+    return templates.TemplateResponse(request, "about.html.j2")
 
 
 @app.get("/health")

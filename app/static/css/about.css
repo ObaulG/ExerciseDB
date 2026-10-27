@@ -1,0 +1,121 @@
+/* === Page « À propos » === */
+
+/* La fenêtre About contient beaucoup de texte : on laisse la
+   window-body scroller verticalement à l'intérieur de la fenêtre
+   plutôt que de déborder du cadre. */
+#about-window > .window-body {
+    overflow-y: auto;
+}
+
+.about-body {
+    padding: 16px 20px;
+}
+
+.about-intro {
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 18px 0;
+    padding: 10px 14px;
+    background: var(--bleu-pale);
+    border: 1px solid var(--bleu-clair);
+    border-left: 4px solid var(--bleu);
+}
+
+.about-section {
+    margin-bottom: 18px;
+}
+
+.about-section h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--bleu-fonce);
+    border-bottom: 2px solid var(--vert-clair);
+    padding-bottom: 4px;
+}
+
+.about-text {
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.about-text code {
+    background: var(--bleu-pale);
+    border: 1px solid var(--bleu-clair);
+    padding: 1px 4px;
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    color: var(--bleu-fonce);
+}
+
+/* --- Liste des fonctionnalités --- */
+
+.feature-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.feature-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    border-bottom: 1px dotted var(--bleu-clair);
+}
+
+.feature-list li:last-child {
+    border-bottom: none;
+}
+
+.feature-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* --- Tableau des technologies --- */
+
+.tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.tech-table td {
+    padding: 5px 10px;
+    border: 1px solid var(--bleu-clair);
+}
+
+.tech-table .tech-label {
+    background: var(--bleu-pale);
+    font-weight: bold;
+    color: var(--bleu-fonce);
+    white-space: nowrap;
+    width: 140px;
+}
+
+.tech-table tr:nth-child(even) td:not(.tech-label) {
+    background: #f0f8ff;
+}
+
+/* --- Étapes de démarrage --- */
+
+.about-steps {
+    margin: 0;
+    padding-left: 22px;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.about-steps code {
+    background: var(--bleu-pale);
+    border: 1px solid var(--bleu-clair);
+    padding: 1px 4px;
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    color: var(--bleu-fonce);
+}

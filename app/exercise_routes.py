@@ -13,6 +13,8 @@ from app.database import db
 from app.llm.edit_agent import edit_exercise
 from app.llm.extraction_agent import extract_exercises
 from app.llm.schemas import ExerciseEditInputSchema
+from app.llm.schemas import VariationInputSchema
+from app.llm.variation_agent import generate_variations
 
 router = APIRouter(prefix="/api/exercises", tags=["exercises"])
 
@@ -113,6 +115,10 @@ async def extract(
 ) -> dict:
     try:
         result = extract_exercises(payload.raw_text, api_key=x_mistral_api_key)
+
+        # On retire les \n qui sont générés par l'agent.
+        for ex in result.exercises:
+            ex.enonce = ex.enonce.replace("\n", "")
         return {
             "exercises": [
                 {
@@ -181,6 +187,84 @@ async def ai_edit(
             "corrections": ex.corrections,
         },
         "summary": ex.summary,
+    }
+
+
+class VariationRequest(BaseModel):
+    exercise_id: int = Field(..., description="Identifiant de l'exercice source à approfondir.")
+    instruction: str = Field(
+        default="",
+        description="Instruction optionnelle en français : notions à explorer, contexte à changer, etc.",
+    )
+
+
+@router.post("/variations")
+async def variations(
+    payload: VariationRequest,
+    x_mistral_api_key: Annotated[str | None, Header()] = None,
+) -> dict:
+    """Génère plusieurs variantes d'un exercice existant qui approfondissent
+    le même problème avec d'autres notions mathématiques.
+
+    Récupère l'exercice source en base, le passe à l'agent de variation,
+    et renvoie 2 à 3 variantes complètes (énoncé + corrigé + métadonnées).
+    Aucune écriture en base : l'utilisateur choisit une variante et
+    l'enregistre lui-même.
+    """
+    exercise = db.get_exercise(payload.exercise_id)
+    if exercise is None:
+        raise HTTPException(status_code=404, detail="Exercice source introuvable.")
+
+    corrections = [c["text"] for c in (exercise.get("corrections") or [])]
+
+    try:
+        result = generate_variations(
+            VariationInputSchema(
+                name=exercise["name"] or "",
+                text=exercise["text"],
+                image_url=exercise.get("image_url") or "",
+                type=exercise.get("type") or "",
+                niveau=exercise.get("niveau") or "",
+                temps_estime=exercise.get("temps_estime") or 0,
+                themes=exercise.get("themes") or [],
+                corrections=corrections,
+                instruction=payload.instruction,
+            ),
+            api_key=x_mistral_api_key,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Erreur lors de la génération des variantes : {exc}",
+        ) from exc
+
+    return {
+        "source": {
+            "id": exercise["id"],
+            "name": exercise["name"],
+            "text": exercise["text"],
+            "image_url": exercise.get("image_url"),
+            "type": exercise.get("type"),
+            "niveau": exercise.get("niveau"),
+            "temps_estime": exercise.get("temps_estime"),
+            "themes": exercise.get("themes") or [],
+        },
+        "variations": [
+            {
+                "name": v.name,
+                "text": v.text,
+                "image_url": v.image_url or None,
+                "type": v.type,
+                "niveau": v.niveau,
+                "temps_estime": v.temps_estime,
+                "themes": v.themes,
+                "corrections": v.corrections,
+                "summary": v.summary,
+            }
+            for v in result.variations
+        ],
     }
 
 

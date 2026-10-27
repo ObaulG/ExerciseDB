@@ -18,16 +18,84 @@ class MathAnswerEvaluationSchema(BaseIOSchema):
     )
     feedback: str = Field(
         ...,
-        description="Feedback pédagogique en français : ce qui est correct, les erreurs éventuelles et une piste d'amélioration.",
+        description=(
+            "Feedback pédagogique en français : ce qui est correct, les erreurs "
+            "éventuelles et une piste d'amélioration. LaTeX simple uniquement : "
+            "pas d'environnement (sauf enumerate/itemize), pas de table, pas de "
+            "\\n ; on aère le texte en allant réellement à la ligne."
+        ),
     )
     corrected_solution: str = Field(
         ...,
-        description="Solution complète et correcte du problème, avec les étapes détaillées.",
+        description=(
+            "Solution complète et correcte du problème, avec les étapes détaillées. "
+            "LaTeX simple uniquement : pas d'environnement (sauf "
+            "enumerate/itemize), pas de table, pas de \\n ; on aère le texte en "
+            "allant réellement à la ligne."
+        ),
     )
 
 
 class ProblemInputSchema(BaseIOSchema):
     """Entrée soumise à l'agent : le problème et la réponse de l'étudiant."""
+
+    problem: str = Field(
+        ...,
+        description="L'énoncé complet du problème de mathématiques.",
+    )
+    student_answer: str = Field(
+        ...,
+        description="La réponse rédigée par l'étudiant, avec son raisonnement tel quel.",
+    )
+
+
+class GuidanceOutputSchema(BaseIOSchema):
+    """Guidage pédagogique d'un étudiant : on ne donne pas la solution,
+    on oriente. Aucune note n'est attribuée."""
+
+    status: str = Field(
+        ...,
+        description=(
+            "Appréciation générale en français parmi : « correct », "
+            "« incomplet », « erreurs ». « correct » si la réponse est juste et "
+            "complète, « incomplet » si la démarche est bonne mais partielle, "
+            "« erreurs » s'il y a des erreurs à corriger."
+        ),
+    )
+    errors: str = Field(
+        default="",
+        description=(
+            "Description en français des erreurs éventuelles, avec leur "
+            "emplacement dans le raisonnement. Vide s'il n'y en a pas. LaTeX "
+            "simple uniquement : pas d'environnement (sauf enumerate/itemize), "
+            "pas de table, pas de \\n ; on aère le texte en allant réellement à "
+            "la ligne."
+        ),
+    )
+    hints: str = Field(
+        ...,
+        description=(
+            "Pistes concrètes en français pour corriger les erreurs ou "
+            "progresser, sans donner la solution finale. LaTeX simple "
+            "uniquement : pas d'environnement (sauf enumerate/itemize), pas de "
+            "table, pas de \\n ; on aère le texte en allant réellement à la ligne."
+        ),
+    )
+    missing: str = Field(
+        default="",
+        description=(
+            "Si la réponse est incomplète, points manquants à traiter et "
+            "questions orientées pour aider l'étudiant à les combler. Vide si "
+            "rien ne manque. LaTeX simple uniquement : pas d'environnement "
+            "(sauf enumerate/itemize), pas de table, pas de \\n ; on aère le "
+            "texte en allant réellement à la ligne."
+        ),
+    )
+
+
+class GuidanceInputSchema(BaseIOSchema):
+    """Entrée soumise à l'agent de guidage : le problème et la réponse de
+    l'étudiant."""
 
     problem: str = Field(
         ...,
@@ -169,4 +237,55 @@ class ExerciseEditOutputSchema(BaseIOSchema):
     exercise: ExerciseEditOutputItem = Field(
         ...,
         description="L'exercice modifié selon l'instruction de l'utilisateur.",
+    )
+
+
+class VariationInputSchema(BaseIOSchema):
+    """Entrée soumise à l'agent de variation : un exercice source complet
+    et une instruction optionnelle de l'utilisateur."""
+
+    name: str = Field(default="", description="Titre de l'exercice source.")
+    text: str = Field(..., description="Énoncé complet de l'exercice source, en LaTeX compilable directement par latex.js.")
+    image_url: str = Field(default="", description="Image de l'exercice source, déclarée hors du code LaTeX.")
+    type: str = Field(default="", description="Type de l'exercice source.")
+    niveau: str = Field(default="", description="Niveau scolaire de l'exercice source.")
+    temps_estime: int = Field(default=0, ge=0, description="Temps estimé de l'exercice source en minutes.")
+    themes: list[str] = Field(default_factory=list, description="Thèmes mathématiques associés à l'exercice source.")
+    corrections: list[str] = Field(
+        default_factory=list,
+        description="Corrigés de l'exercice source (un par entrée).",
+    )
+    instruction: str = Field(
+        default="",
+        description="Instruction optionnelle en français : notions à explorer, contexte à changer, etc.",
+    )
+
+
+class VariationItem(BaseIOSchema):
+    """Une variante générée par l'agent : un nouvel exercice qui approfondit
+    le problème source avec d'autres notions mathématiques."""
+
+    name: str = Field(default="", description="Titre proposé pour la variante.")
+    text: str = Field(..., description="Énoncé complet de la variante, en LaTeX compilable directement par latex.js.")
+    image_url: str = Field(default="", description="Image de la variante, déclarée hors du code LaTeX (vide si réutilisée depuis la source).")
+    type: str = Field(default="", description="Type proposé parmi la liste de référence.")
+    niveau: str = Field(default="", description="Niveau scolaire proposé parmi la liste de référence.")
+    temps_estime: int = Field(default=0, ge=0, description="Temps estimé proposé en minutes.")
+    themes: list[str] = Field(default_factory=list, description="Thèmes proposés parmi la liste de référence.")
+    corrections: list[str] = Field(
+        default_factory=list,
+        description="Corrigés proposés (un par entrée), en LaTeX compilable directement par latex.js.",
+    )
+    summary: str = Field(
+        default="",
+        description="Résumé court en français décrivant les notions mathématiques exploitées et le lien avec l'exercice source.",
+    )
+
+
+class VariationOutputSchema(BaseIOSchema):
+    """Réponse de l'agent de variation : plusieurs variantes d'un exercice."""
+
+    variations: list[VariationItem] = Field(
+        ...,
+        description="Liste de variantes générées (2 à 3), chacune approfondissant le problème source avec des notions différentes.",
     )

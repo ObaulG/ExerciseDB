@@ -284,3 +284,76 @@ def get_all_themes() -> list[str]:
             "SELECT label FROM theme ORDER BY label"
         ).fetchall()
         return [r["label"] for r in rows]
+
+
+# --- Modèle de compétences : tentatives d'évaluation ---
+
+def record_attempt(
+    user_id: int,
+    exercise_id: int,
+    student_answer: str,
+    is_correct: bool,
+    score: int,
+    feedback: str,
+    corrected_solution: str,
+) -> int:
+    """Persiste le résultat d'une évaluation automatique (agent IA) pour un
+    utilisateur et un exercice donnés. Renvoie l'identifiant de la tentative."""
+    with get_connection() as conn:
+        row = conn.execute(
+            "INSERT INTO attempt "
+            "(user_id, exercise_id, student_answer, is_correct, score, "
+            "feedback, corrected_solution) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (
+                user_id,
+                exercise_id,
+                student_answer,
+                is_correct,
+                score,
+                feedback,
+                corrected_solution,
+            ),
+        ).fetchone()
+        return row["id"]
+
+
+def get_user_attempts(user_id: int, limit: int = 100) -> list[dict]:
+    """Historique des tentatives d'un utilisateur, des plus récentes aux plus
+    anciennes, avec le nom de l'exercice associé."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT a.id, a.exercise_id, e.name AS exercise_name, "
+            "a.student_answer, a.is_correct, a.score, a.feedback, "
+            "a.corrected_solution, a.created_at "
+            "FROM attempt a JOIN exercise e ON e.id = a.exercise_id "
+            "WHERE a.user_id = %s "
+            "ORDER BY a.created_at DESC LIMIT %s",
+            (user_id, limit),
+        ).fetchall()
+        return [
+            {
+                "id": r["id"],
+                "exercise_id": r["exercise_id"],
+                "exercise_name": r["exercise_name"],
+                "student_answer": r["student_answer"],
+                "is_correct": r["is_correct"],
+                "score": r["score"],
+                "feedback": r["feedback"],
+                "corrected_solution": r["corrected_solution"],
+                "created_at": str(r["created_at"]),
+            }
+            for r in rows
+        ]
+
+
+def get_completed_exercise_ids(user_id: int) -> list[int]:
+    """Identifiants des exercices qu'un utilisateur a réussi au moins une fois
+    (is_correct = True) lors d'une évaluation automatique."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT DISTINCT exercise_id FROM attempt "
+            "WHERE user_id = %s AND is_correct = TRUE",
+            (user_id,),
+        ).fetchall()
+        return [r["exercise_id"] for r in rows]

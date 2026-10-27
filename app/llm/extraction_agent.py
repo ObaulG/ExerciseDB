@@ -30,9 +30,12 @@ SYSTEM_PROMPT = SystemPromptGenerator(
         "Réponds toujours en français.",
         "Préserve fidèlement le contenu mathématique : ne reformule pas les énoncés, conserve les notations LaTeX.",
         "Si le texte ne contient aucun exercice identifiable, renvoie une liste vide.",
-        "Ne fusionme pas plusieurs exercices en un seul : chaque exercice distinct doit être un élément séparé de la liste.",
+        "Ne fusionne pas plusieurs exercices en un seul : chaque exercice distinct doit être un élément séparé de la liste.",
         "N'inclus AUCUNE balise d'exercice autour du code (pas de \\begin{exercise}, \\exercise{}, \\exercice, @exercice, #exercise(...) ni titre « Exercice N ») : uniquement le contenu LaTeX situé à l'intérieur de ces balises dans le texte source.",
+        "Si des \\Question sont présents (environnement exercise), remplace les par des \\item et tu enveloppes dans un enumerate.",
         "Retire toute commande ou environnement d'image (\\includegraphics, \\begin{figure}...\\end{figure}, \\image, \\epsfig) du LaTeX extrait : les images ne sont pas représentables. Si le contenu de l'image est important, remplace-le par une courte phrase descriptive entre crochets.",
+        "Supprime également les environnements multicols",
+        "Ne double pas les antislash dans le texte de l'énoncé et des éventuelles corrections"
         "Si un exercice n'a pas de corrigé dans le texte source, laisse le champ correction vide.",
         "Le champ temps_estime est en minutes (entier). Si impossible à estimer, mets 0.",
     ],

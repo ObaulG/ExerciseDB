@@ -95,6 +95,13 @@ function buildExerciseItem(ex) {
     });
     item.appendChild(viewBtn);
 
+    var deepenBtn = document.createElement("a");
+    deepenBtn.href = "/deepen?exercise_id=" + ex.id;
+    deepenBtn.className = "retro-btn";
+    deepenBtn.textContent = "\ud83d\udd2c Approfondir";
+    deepenBtn.style.marginLeft = "6px";
+    item.appendChild(deepenBtn);
+
     if (isAdmin) {
         var adminActions = document.createElement("div");
         adminActions.className = "exercise-admin-actions";

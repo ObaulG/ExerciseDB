@@ -302,3 +302,86 @@
     margin-top: 4px;
     font-style: italic;
 }
+
+.eval-result-completed {
+    background: #008000;
+    color: #fff;
+    border: 1px solid #004000;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* === Modalité de correction === */
+
+.work-mode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    font-size: 13px;
+}
+
+.work-mode label {
+    color: var(--bleu-fonce, #000080);
+    font-weight: bold;
+}
+
+.work-mode select {
+    min-width: 240px;
+}
+
+/* === Rendu mode « guide » === */
+
+.guide-result {
+    border-color: #008000 #004000 #004000 #008000;
+}
+
+.guide-status {
+    border: 1px solid #808080;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.guide-status.ok {
+    background: #008000;
+    color: #fff;
+}
+
+.guide-status.partial {
+    background: #b88000;
+    color: #fff;
+}
+
+.guide-status.ko {
+    background: #800000;
+    color: #fff;
+}
+
+.guide-errors,
+.guide-hints,
+.guide-missing {
+    font-size: 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--bleu-clair, #aaa);
+    padding: 6px 8px;
+}
+
+.guide-errors strong,
+.guide-hints strong,
+.guide-missing strong {
+    color: var(--bleu-fonce, #000080);
+}
+
+.guide-errors {
+    background: #f4d4d4;
+}
+
+.guide-hints {
+    background: #d4f4d4;
+}
+
+.guide-missing {
+    background: #fff4d4;
+}

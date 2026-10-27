@@ -53,6 +53,9 @@ Ouvrir http://127.0.0.1:8000/
 
 - `GET /` — page de chat (évaluateur de réponses)
 - `GET /exercises` — page d'import d'exercices
+- `GET /browse` — page de consultation des exercices
+- `GET /create` — page de création d'un exercice
+- `GET /deepen` — page d'approfondissement : génère des variantes d'un exercice existant
 - `GET /profile` — profil étudiant
 - `GET /health` — état du service
 - `POST /api/evaluate` — évalue une réponse : `{ "problem": "...", "student_answer": "..." }`
@@ -60,6 +63,7 @@ Ouvrir http://127.0.0.1:8000/
   - `503` si `MISTRAL_API_KEY` absente, `502` si erreur LLM
 - `GET/POST /api/exercises` — lister / créer un exercice (avec corrigés)
 - `GET /api/exercises/{id}` — détail d'un exercice
+- `POST /api/exercises/variations` — génère 2 à 3 variantes d'un exercice qui approfondissent le même problème avec d'autres notions : `{ "exercise_id": N, "instruction": "..." }`
 - `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
 
 ## Tests

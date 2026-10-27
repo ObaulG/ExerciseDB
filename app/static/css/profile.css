@@ -1,0 +1,167 @@
+/* Page Profil — modèle de compétences */
+
+.profile-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.profile-stat {
+    flex: 1;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+.profile-stat-value {
+    font-size: 22px;
+    font-weight: bold;
+    color: #000080;
+}
+
+.profile-stat-label {
+    font-size: 12px;
+    color: #404040;
+    margin-top: 2px;
+}
+
+.profile-section {
+    margin-bottom: 20px;
+}
+
+.profile-section h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #000080;
+}
+
+.profile-empty {
+    color: #404040;
+    font-style: italic;
+    padding: 8px 0;
+}
+
+/* Liste des exercices complétés */
+
+.completed-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.completed-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+.completed-chip a {
+    color: #000080;
+    text-decoration: none;
+}
+
+.completed-chip a:hover {
+    text-decoration: underline;
+}
+
+/* Historique des tentatives */
+
+.attempt-item {
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+
+.attempt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.attempt-title {
+    font-weight: bold;
+    color: #000080;
+}
+
+.attempt-title a {
+    color: #000080;
+    text-decoration: none;
+}
+
+.attempt-title a:hover {
+    text-decoration: underline;
+}
+
+.attempt-score {
+    font-weight: bold;
+}
+
+.attempt-score.bad {
+    color: #800000;
+}
+
+.attempt-status {
+    font-size: 12px;
+    padding: 1px 6px;
+    border: 1px solid #808080;
+}
+
+.attempt-status.ok {
+    background: #008000;
+    color: #fff;
+}
+
+.attempt-status.ko {
+    background: #800000;
+    color: #fff;
+}
+
+.attempt-date {
+    font-size: 11px;
+    color: #404040;
+    margin-bottom: 6px;
+}
+
+.attempt-feedback {
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.attempt-feedback strong {
+    color: #000080;
+}
+
+.attempt-solution {
+    font-size: 12px;
+}
+
+.attempt-solution strong {
+    color: #000080;
+}
+
+.attempt-answer {
+    font-size: 11px;
+    color: #404040;
+    background: #dfdfdf;
+    border: 1px solid #808080;
+    padding: 4px 6px;
+    margin-top: 6px;
+    white-space: pre-wrap;
+}
+
+.profile-auth-required {
+    padding: 16px;
+    text-align: center;
+    color: #404040;
+}

@@ -2,21 +2,8 @@
 
 const MAX_SELECTION = 6;
 
-const TYPES_EXERCICE = [
-    "Application directe",
-    "Exercice classique",
-    "Exercice normal",
-    "Problème",
-    "Recherche",
-    "Démonstration",
-    "Problème complet",
-];
-
-const NIVEAUX_SCOLAIRES = [
-    "CP", "CE1", "CE2", "CM1", "CM2",
-    "6e", "5e", "4e", "3e",
-    "2nde", "1ère", "Terminale", "Supérieur",
-];
+// TYPES_EXERCICE et NIVEAUX_SCOLAIRES sont définis dans exercises-shared.js
+// (chargé avant ce script sur la page /training).
 
 // État : exercices sélectionnés [{ id, name, text, type, niveau, themes }]
 let selectedExercises = [];
@@ -356,8 +343,12 @@ async function submitAnswers() {
         return;
     }
 
+    var mode = (document.getElementById("correction-mode") || {}).value || "grade";
+
     btn.disabled = true;
-    statusEl.textContent = "Évaluation en cours…";
+    statusEl.textContent = mode === "guide"
+        ? "Guidage en cours…"
+        : "Évaluation en cours…";
     resultsContainer.innerHTML = "";
 
     var headers = { "Content-Type": "application/json" };
@@ -368,7 +359,7 @@ async function submitAnswers() {
         var res = await fetch("/api/training/evaluate", {
             method: "POST",
             headers: headers,
-            body: JSON.stringify({ answers: answers }),
+            body: JSON.stringify({ answers: answers, mode: mode }),
         });
 
         if (!res.ok) {
@@ -378,7 +369,9 @@ async function submitAnswers() {
 
         var data = await res.json();
         renderResults(data.results || []);
-        statusEl.textContent = "Évaluation terminée.";
+        statusEl.textContent = mode === "guide"
+            ? "Guidage terminé."
+            : "Évaluation terminée.";
     } catch (err) {
         statusEl.textContent = "Erreur : " + err.message;
     }
@@ -391,52 +384,136 @@ function renderResults(results) {
     container.innerHTML = "";
 
     results.forEach(function (r, idx) {
-        var eval_ = r.evaluation;
-        var block = document.createElement("div");
-        block.className = "eval-result";
-
-        var header = document.createElement("div");
-        header.className = "eval-result-header";
-
-        var title = document.createElement("span");
-        title.textContent = "Exercice #" + r.exercise_id;
-        header.appendChild(title);
-
-        var score = document.createElement("span");
-        score.className = "eval-result-score" + (eval_.score < 5 ? " bad" : "");
-        score.textContent = eval_.score + "/10";
-        header.appendChild(score);
-
-        var correct = document.createElement("span");
-        correct.textContent = eval_.is_correct ? "✓ Correct" : "✗ Incorrect";
-        header.appendChild(correct);
-
-        block.appendChild(header);
-
-        var body = document.createElement("div");
-        body.className = "eval-result-body";
-
-        var feedback = document.createElement("div");
-        feedback.className = "eval-result-feedback";
-        feedback.innerHTML = "<strong>Feedback :</strong><br>" + eval_.feedback;
-        body.appendChild(feedback);
-
-        var correction = document.createElement("div");
-        correction.className = "eval-result-correction";
-        correction.innerHTML = "<strong>Solution :</strong><br>" + eval_.corrected_solution;
-        body.appendChild(correction);
-
-        var source = document.createElement("div");
-        source.className = "eval-result-source";
-        source.textContent = r.correction_source === "db"
-            ? "Corrigé issu de la base de données."
-            : "Corrigé généré dynamiquement par l'agent LLM.";
-        body.appendChild(source);
-
-        block.appendChild(body);
-        container.appendChild(block);
-        renderMath(body);
+        if (r.mode === "guide") {
+            renderGuideResult(container, r);
+        } else {
+            renderGradeResult(container, r);
+        }
     });
+}
+
+// === Rendu mode « grade » (note + correction) ===
+
+function renderGradeResult(container, r) {
+    var eval_ = r.evaluation;
+    var block = document.createElement("div");
+    block.className = "eval-result";
+
+    var header = document.createElement("div");
+    header.className = "eval-result-header";
+
+    var title = document.createElement("span");
+    title.textContent = "Exercice #" + r.exercise_id;
+    header.appendChild(title);
+
+    var score = document.createElement("span");
+    score.className = "eval-result-score" + (eval_.score < 5 ? " bad" : "");
+    score.textContent = eval_.score + "/10";
+    header.appendChild(score);
+
+    var correct = document.createElement("span");
+    correct.textContent = eval_.is_correct ? "✓ Correct" : "✗ Incorrect";
+    header.appendChild(correct);
+
+    if (r.completed) {
+        var done = document.createElement("span");
+        done.className = "eval-result-completed";
+        done.textContent = "✓ Complété";
+        header.appendChild(done);
+    }
+
+    block.appendChild(header);
+
+    var body = document.createElement("div");
+    body.className = "eval-result-body";
+
+    var feedback = document.createElement("div");
+    feedback.className = "eval-result-feedback";
+    feedback.innerHTML = "<strong>Feedback :</strong><br>" + eval_.feedback;
+    body.appendChild(feedback);
+
+    var correction = document.createElement("div");
+    correction.className = "eval-result-correction";
+    correction.innerHTML = "<strong>Solution :</strong><br>" + eval_.corrected_solution;
+    body.appendChild(correction);
+
+    var source = document.createElement("div");
+    source.className = "eval-result-source";
+    source.textContent = r.correction_source === "db"
+        ? "Corrigé issu de la base de données."
+        : "Corrigé généré dynamiquement par l'agent LLM.";
+    body.appendChild(source);
+
+    block.appendChild(body);
+    container.appendChild(block);
+    renderMath(body);
+}
+
+// === Rendu mode « guide » (pistes, sans note ni solution) ===
+
+function renderGuideResult(container, r) {
+    var g = r.guidance;
+    var block = document.createElement("div");
+    block.className = "eval-result guide-result";
+
+    var header = document.createElement("div");
+    header.className = "eval-result-header";
+
+    var title = document.createElement("span");
+    title.textContent = "Exercice #" + r.exercise_id;
+    header.appendChild(title);
+
+    var status = document.createElement("span");
+    status.className = "guide-status " + guideStatusClass(g.status);
+    status.textContent = guideStatusLabel(g.status);
+    header.appendChild(status);
+
+    block.appendChild(header);
+
+    var body = document.createElement("div");
+    body.className = "eval-result-body";
+
+    if (g.errors && g.errors.trim()) {
+        var errors = document.createElement("div");
+        errors.className = "guide-errors";
+        errors.innerHTML = "<strong>Erreurs identifiées :</strong><br>" + g.errors;
+        body.appendChild(errors);
+    }
+
+    var hints = document.createElement("div");
+    hints.className = "guide-hints";
+    hints.innerHTML = "<strong>Pistes pour progresser :</strong><br>" + g.hints;
+    body.appendChild(hints);
+
+    if (g.missing && g.missing.trim()) {
+        var missing = document.createElement("div");
+        missing.className = "guide-missing";
+        missing.innerHTML = "<strong>Points à compléter :</strong><br>" + g.missing;
+        body.appendChild(missing);
+    }
+
+    var source = document.createElement("div");
+    source.className = "eval-result-source";
+    source.textContent = r.correction_source === "db"
+        ? "Corrigé de référence issu de la base de données."
+        : "Corrigé de référence généré dynamiquement par l'agent LLM.";
+    body.appendChild(source);
+
+    block.appendChild(body);
+    container.appendChild(block);
+    renderMath(body);
+}
+
+function guideStatusClass(status) {
+    if (/correct/i.test(status)) return "ok";
+    if (/incomplet/i.test(status)) return "partial";
+    return "ko";
+}
+
+function guideStatusLabel(status) {
+    if (/correct/i.test(status)) return "✓ Correct";
+    if (/incomplet/i.test(status)) return "◐ Incomplet";
+    return "✗ Erreurs";
 }
 
 // === Rendu KaTeX ===

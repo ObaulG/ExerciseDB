@@ -34,10 +34,12 @@
                     <a href="/exercises">📥 Importer</a>
                     <a href="/browse">👁️ Consulter</a>
                     <a href="/create">✨ Créer</a>
+                    <a href="/deepen">🔬 Approfondir</a>
                 </div>
                 <a href="/training" class="active">✏️ Entraînement</a>
                 <a href="/settings">⚙️ Paramètres</a>
                 <a href="/profile">👤 Profil</a>
+                <a href="/about">ℹ️ À propos</a>
             </nav>
         </aside>
 
@@ -97,6 +99,13 @@
                     </div>
                     <div class="window-body">
                         <div id="work-container"></div>
+                        <div class="work-mode">
+                            <label>Modalité de correction :</label>
+                            <select id="correction-mode">
+                                <option value="grade">Noter (note + correction)</option>
+                                <option value="guide">Guider (pistes, sans note ni solution)</option>
+                            </select>
+                        </div>
                         <div class="work-actions">
                             <button type="button" class="retro-btn primary" id="submit-answers-btn">Envoyer mes réponses</button>
                             <span id="submit-status"></span>
