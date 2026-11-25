@@ -56,6 +56,9 @@ Ouvrir http://127.0.0.1:8000/
 - `GET /exercises` — page d'import d'exercices
 - `GET /browse` — page de consultation des exercices
 - `GET /create` — page de création d'un exercice
+- `GET /edit` — page d'édition d'un exercice existant : sélection de l'exercice,
+  édition du code LaTeX de l'énoncé et du corrigé, compilation latex.js en direct
+  (enregistrement via `PUT /api/exercises/{id}`, réservé aux administrateurs)
 - `GET /deepen` — page d'approfondissement : génère des variantes d'un exercice existant
 - `GET /profile` — profil étudiant
 - `GET /health` — état du service

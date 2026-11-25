@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Maths — Modifier un exercice</title>
+    <link rel="stylesheet" href="/static/css/retro.css">
+    <link rel="stylesheet" href="/static/css/exercises.css">
+    <link rel="stylesheet" href="/static/css/create.css">
+    <link rel="stylesheet" href="/static/css/edit.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/latex.js"></script>
+    <script defer src="/static/js/auth.js"></script>
+    <script defer src="/static/js/exercises-shared.js"></script>
+    <script defer src="/static/js/edit.js"></script>
+</head>
+<body>
+    <header class="site-banner">
+        <h1>Assistant Maths</h1>
+        <div class="site-tagline">Évaluateur de réponses &amp; base d'exercices</div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">Menu</div>
+            <div class="sidebar-auth">
+                {% include "_header.html.j2" %}
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">💬 Chat</a>
+                <div class="nav-group">
+                    <span class="nav-group-title">📚 Exercices</span>
+                    <a href="/exercises">📥 Importer</a>
+                    <a href="/browse">👁️ Consulter</a>
+                    <a href="/create">✨ Créer</a>
+                    <a href="/edit" class="active">✏️ Modifier</a>
+                    <a href="/deepen">🔬 Approfondir</a>
+                </div>
+                <a href="/training">✍️ Entraînement</a>
+                <a href="/profile">👤 Profil</a>
+                <a href="/about">ℹ️ À propos</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="content-header">
+                <h1>✏️ Modifier un exercice</h1>
+            </div>
+
+            <div class="content-body">
+                <!-- === Sélection de l'exercice === -->
+                <div class="window" id="select-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">🔣 Sélectionner un exercice</h2>
+                    </div>
+
+                    <div class="window-body">
+                        <p class="edit-help">
+                            Choisis un exercice dans la liste : ses champs se chargent dans le
+                            formulaire ci-dessous. L'aperçu LaTeX se recompile en direct à
+                            chaque modification de l'énoncé ou du corrigé. L'enregistrement
+                            est réservé aux administrateurs.
+                        </p>
+
+                        <div class="edit-select-row">
+                            <select id="exercise-select"></select>
+                            <span id="select-status" class="inline-status"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === Formulaire d'édition === -->
+                <div class="window" id="form-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">📝 Formulaire <span id="editing-badge" class="editing-badge" style="display:none"></span></h2>
+                    </div>
+
+                    <div class="window-body">
+                        <div class="create-form" id="edit-form">
+                            <label for="f-name">Titre</label>
+                            <input type="text" id="f-name" maxlength="200" placeholder="Titre de l'exercice" disabled>
+
+                            <label for="f-text">
+                                Énoncé
+                            </label>
+                            <textarea id="f-text" rows="6" placeholder="Énoncé de l'exercice, en LaTeX compilable par latex.js ($...$ / $$...$$)" disabled></textarea>
+
+                            <div class="ex-card-row">
+                                <div class="ex-card-field">
+                                    <label for="f-type">Type</label>
+                                    <select id="f-type" disabled></select>
+                                </div>
+                                <div class="ex-card-field">
+                                    <label for="f-niveau">Niveau</label>
+                                    <select id="f-niveau" disabled></select>
+                                </div>
+                                <div class="ex-card-field">
+                                    <label for="f-temps">Temps <span class="opt">(min)</span></label>
+                                    <input type="number" id="f-temps" min="0" placeholder="—" disabled>
+                                </div>
+                            </div>
+
+                            <label>Thèmes</label>
+                            <div id="themes-block"></div>
+
+                            <label for="f-image">Image <span class="opt">(optionnelle, au plus une, déclarée hors du code LaTeX)</span></label>
+                            <div class="image-insert-row">
+                                <button type="button" class="retro-btn image-insert-btn" id="f-image-btn" disabled>🖼️ Choisir une image</button>
+                                <button type="button" class="retro-btn" id="f-image-remove" style="display:none">✕ Retirer l’image</button>
+                                <span class="inline-status image-status" id="f-image-status"></span>
+                            </div>
+
+                            <label for="f-correction">Correction <span class="opt">(les corrigés existants sont concaténés, séparés par une ligne vide)</span></label>
+                            <textarea id="f-correction" rows="6" placeholder="Texte du corrigé, en LaTeX compilable par latex.js ($...$ / $$...$$)" disabled></textarea>
+
+                            <div class="form-actions">
+                                <button type="button" class="retro-btn primary" id="save-btn" disabled>💾 Enregistrer les modifications</button>
+                                <button type="button" class="retro-btn" id="reset-btn" disabled>↺ Recharger depuis la base</button>
+                                <span id="save-status" class="inline-status"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === Aperçu du rendu === -->
+                <div class="window" id="preview-window">
+                    <div class="title-bar">
+                        <h2 class="title-bar-text">👁️ Aperçu du rendu (compilation en direct)</h2>
+                    </div>
+
+                    <div class="window-body">
+                        <div class="preview-section">
+                            <div class="preview-label">
+                                Énoncé <span class="latex-status" id="latex-status-text"></span>
+                            </div>
+                            <div class="preview-content" id="preview-text"></div>
+                        </div>
+                        <div class="preview-section">
+                            <div class="preview-label">Correction <span class="latex-status" id="latex-status-correction"></span></div>
+                            <div class="preview-content" id="preview-correction"></div>
+                        </div>
+                        <div class="preview-section" id="image-preview-section" style="display:none">
+                            <div class="preview-label">Image</div>
+                            <div class="preview-content" id="preview-image"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

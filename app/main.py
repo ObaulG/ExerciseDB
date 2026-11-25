@@ -53,6 +53,11 @@ async def create_page(request: Request):
     return templates.TemplateResponse(request, "create.html.j2")
 
 
+@app.get("/edit", response_class=HTMLResponse)
+async def edit_page(request: Request):
+    return templates.TemplateResponse(request, "edit.html.j2")
+
+
 @app.get("/deepen", response_class=HTMLResponse)
 async def deepen_page(request: Request):
     return templates.TemplateResponse(request, "deepen.html.j2")
