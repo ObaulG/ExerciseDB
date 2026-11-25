@@ -352,9 +352,6 @@ async function submitAnswers() {
     resultsContainer.innerHTML = "";
 
     var headers = { "Content-Type": "application/json" };
-    var apiKey = localStorage.getItem("mistral_api_key") || "";
-    if (apiKey) headers["X-Mistral-API-Key"] = apiKey;
-
     try {
         var res = await fetch("/api/training/evaluate", {
             method: "POST",

@@ -63,11 +63,6 @@ async def profile_page(request: Request):
     return templates.TemplateResponse(request, "profile.html.j2")
 
 
-@app.get("/settings", response_class=HTMLResponse)
-async def settings_page(request: Request):
-    return templates.TemplateResponse(request, "settings.html.j2")
-
-
 @app.get("/training", response_class=HTMLResponse)
 async def training_page(request: Request):
     return templates.TemplateResponse(request, "training.html.j2")

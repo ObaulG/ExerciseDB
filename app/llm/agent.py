@@ -33,8 +33,8 @@ SYSTEM_PROMPT = SystemPromptGenerator(
 )
 
 
-def _build_agent(api_key: str | None) -> AtomicAgent:
-    key = api_key or os.environ.get("MISTRAL_API_KEY")
+def _build_agent() -> AtomicAgent:
+    key = os.environ.get("MISTRAL_API_KEY")
     if not key:
         raise RuntimeError(
             "Aucune clé API Mistral configurée. "
@@ -55,10 +55,9 @@ def _build_agent(api_key: str | None) -> AtomicAgent:
 def evaluate_answer(
     problem: str,
     student_answer: str,
-    api_key: str | None = None,
     reference_correction: str | None = None,
 ) -> MathAnswerEvaluationSchema:
-    agent = _build_agent(api_key)
+    agent = _build_agent()
     full_problem = problem
     if reference_correction and reference_correction.strip():
         full_problem = (

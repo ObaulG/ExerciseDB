@@ -242,11 +242,6 @@ async function generateVariations() {
     document.getElementById("variations-window").style.display = "none";
 
     var headers = { "Content-Type": "application/json" };
-    var apiKey = localStorage.getItem("mistral_api_key") || "";
-    if (apiKey) {
-        headers["X-Mistral-API-Key"] = apiKey;
-    }
-
     var payload = {
         exercise_id: sourceExercise.id,
         instruction: instruction,

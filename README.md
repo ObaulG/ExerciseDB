@@ -47,6 +47,7 @@ Ouvrir http://127.0.0.1:8000/
 |--------------------|-----------------------------------------------------------|------------------------|
 | `MISTRAL_API_KEY`  | Clé API Mistral (lue côté serveur, jamais commitée)       | —                      |
 | `MISTRAL_MODEL`    | Modèle utilisé par l'agent                                | `mistral-small-latest` |
+| `LLM_RATE_LIMIT_SECONDS` | Intervalle minimum (s) entre deux appels LLM ; 0 désactive la limite | `30`                   |
 | `DATABASE_URL`     | URI PostgreSQL Supabase — **obligatoire**                 | —                      |
 
 ## API
@@ -60,7 +61,8 @@ Ouvrir http://127.0.0.1:8000/
 - `GET /health` — état du service
 - `POST /api/evaluate` — évalue une réponse : `{ "problem": "...", "student_answer": "..." }`
   - Réponse : `{ is_correct, score (0-10), feedback, corrected_solution }`
-  - `503` si `MISTRAL_API_KEY` absente, `502` si erreur LLM
+  - `503` si `MISTRAL_API_KEY` absente, `502` si erreur LLM, `429` si la limite de débit est dépassée
+  - Sans clef utilisateur : les appels au LLM sont limités à une requête toutes les `LLM_RATE_LIMIT_SECONDS` secondes
 - `GET/POST /api/exercises` — lister / créer un exercice (avec corrigés)
 - `GET /api/exercises/{id}` — détail d'un exercice
 - `POST /api/exercises/variations` — génère 2 à 3 variantes d'un exercice qui approfondissent le même problème avec d'autres notions : `{ "exercise_id": N, "instruction": "..." }`

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Header, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from typing import Annotated
 
@@ -7,6 +7,7 @@ from app.database import db
 from app.llm.agent import evaluate_answer
 from app.llm.correction_agent import generate_correction
 from app.llm.guidance_agent import guide_answer
+from app.llm.rate_limit import enforce_llm_rate_limit
 from app.llm.schemas import GuidanceOutputSchema, MathAnswerEvaluationSchema
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -21,12 +22,10 @@ class EvaluationRequest(BaseModel):
 @router.post("/evaluate", response_model=MathAnswerEvaluationSchema)
 async def evaluate(
     request: EvaluationRequest,
-    x_mistral_api_key: Annotated[str | None, Header()] = None,
+    _: None = Depends(enforce_llm_rate_limit),
 ) -> MathAnswerEvaluationSchema:
     try:
-        return evaluate_answer(
-            request.problem, request.student_answer, api_key=x_mistral_api_key
-        )
+        return evaluate_answer(request.problem, request.student_answer)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
@@ -87,7 +86,7 @@ class TrainingEvaluationItem(BaseModel):
 async def training_evaluate(
     request: Request,
     payload: TrainingEvaluateRequest,
-    x_mistral_api_key: Annotated[str | None, Header()] = None,
+    _: None = Depends(enforce_llm_rate_limit),
 ) -> dict:
     """Évalue ou guide un batch de réponses, selon la modalité choisie.
 
@@ -126,9 +125,7 @@ async def training_evaluate(
             correction_source = "db"
         else:
             try:
-                gen = generate_correction(
-                    exercise["text"], api_key=x_mistral_api_key
-                )
+                gen = generate_correction(exercise["text"])
                 reference_correction = gen.correction
                 correction_source = "generated"
             except RuntimeError as exc:
@@ -144,7 +141,6 @@ async def training_evaluate(
                 guidance = guide_answer(
                     problem=exercise["text"],
                     student_answer=item.student_answer,
-                    api_key=x_mistral_api_key,
                     reference_correction=reference_correction,
                 )
             except RuntimeError as exc:
@@ -170,7 +166,6 @@ async def training_evaluate(
             evaluation = evaluate_answer(
                 problem=exercise["text"],
                 student_answer=item.student_answer,
-                api_key=x_mistral_api_key,
                 reference_correction=reference_correction,
             )
         except RuntimeError as exc:
