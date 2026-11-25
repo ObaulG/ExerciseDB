@@ -71,12 +71,12 @@ SYSTEM_PROMPT = SystemPromptGenerator(
 )
 
 
-def _build_agent(api_key: str | None) -> AtomicAgent:
-    key = api_key or os.environ.get("MISTRAL_API_KEY")
+def _build_agent() -> AtomicAgent:
+    key = os.environ.get("MISTRAL_API_KEY")
     if not key:
         raise RuntimeError(
             "Aucune clé API Mistral configurée. "
-            "Renseignez-la sur la page /settings ou définissez MISTRAL_API_KEY."
+            "Définissez la variable d'environnement MISTRAL_API_KEY côté serveur."
         )
     mistral_client = Mistral(api_key=key)
     client = instructor.from_mistral(mistral_client)
@@ -91,7 +91,7 @@ def _build_agent(api_key: str | None) -> AtomicAgent:
 
 
 def generate_variations(
-    payload: VariationInputSchema, api_key: str | None = None
+    payload: VariationInputSchema
 ) -> VariationOutputSchema:
-    agent = _build_agent(api_key)
+    agent = _build_agent()
     return agent.run(payload)

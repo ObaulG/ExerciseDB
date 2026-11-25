@@ -82,7 +82,7 @@ def test_browse_page(client):
 def test_nav_group_on_all_pages(client):
     """Toutes les pages doivent proposer le groupe de navigation Exercices
     avec les trois sous-liens (Importer, Consulter, Créer)."""
-    for path in ["/", "/exercises", "/browse", "/create", "/training", "/settings", "/profile"]:
+    for path in ["/", "/exercises", "/browse", "/create", "/training", "/profile"]:
         response = client.get(path)
         assert response.status_code == 200, f"{path} returned {response.status_code}"
         text = response.text
@@ -92,21 +92,19 @@ def test_nav_group_on_all_pages(client):
         assert "nav-group" in text, f"{path} missing nav-group"
 
 
-def test_settings_page(client):
+def test_settings_page_removed(client):
+    """La page de paramètres (gestion de la clé API Mistral) n'existe plus."""
     response = client.get("/settings")
-    assert response.status_code == 200
-    assert "Clé API Mistral" in response.text
-    assert "Paramètres" in response.text
+    assert response.status_code == 404
 
 
-def test_extract_accepts_api_key_header(client):
-    """L'endpoint d'extraction doit accepter l'en-tête X-Mistral-API-Key sans erreur de validation."""
+def test_extract_validates_payload(client):
+    """L'endpoint d'extraction doit valider le payload sans erreur de schéma."""
     response = client.post(
         "/api/exercises/extract",
         json={"raw_text": "Exercice 1. Calculer 2+2."},
-        headers={"X-Mistral-API-Key": "fake-key-for-validation-test"},
     )
-    # Soit 200 (la clé d'environnement prend le relais), soit 502/503 (erreur LLM)
+    # Soit 200, soit 502/503 (erreur ou absence de clé LLM)
     assert response.status_code in (200, 502, 503)
 
 
@@ -163,9 +161,9 @@ def test_create_page(client):
     assert 'href="/create"' in response.text
 
 
-def test_ai_edit_accepts_api_key_header(client):
-    """L'endpoint /api/exercises/ai-edit doit accepter l'en-tête X-Mistral-API-Key
-    et valider le payload sans erreur de schéma."""
+def test_ai_edit_validates_payload(client):
+    """L'endpoint /api/exercises/ai-edit doit valider le payload
+    sans erreur de schéma."""
     response = client.post(
         "/api/exercises/ai-edit",
         json={
@@ -178,7 +176,6 @@ def test_ai_edit_accepts_api_key_header(client):
             "corrections": [],
             "instruction": "Rédige un corrigé.",
         },
-        headers={"X-Mistral-API-Key": "fake-key-for-validation-test"},
     )
     # Soit 200 (la clé d'environnement prend le relais), soit 502/503 (erreur LLM)
     assert response.status_code in (200, 502, 503)
@@ -211,7 +208,6 @@ def test_ai_edit_does_not_write_to_db(client):
             "text": "Énoncé test.",
             "instruction": "Ne change rien.",
         },
-        headers={"X-Mistral-API-Key": "fake-key-for-validation-test"},
     )
     after = len(db.list_exercises())
     assert before == after

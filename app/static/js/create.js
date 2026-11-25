@@ -326,11 +326,6 @@ async function runAI() {
     document.getElementById("ai-result").style.display = "none";
 
     var headers = { "Content-Type": "application/json" };
-    var apiKey = localStorage.getItem("mistral_api_key") || "";
-    if (apiKey) {
-        headers["X-Mistral-API-Key"] = apiKey;
-    }
-
     var payload = {
         name: state.name,
         text: state.text,

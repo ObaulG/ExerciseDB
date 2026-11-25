@@ -4,14 +4,14 @@ import re
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Header, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from typing import Annotated
 
 from app import auth
 from app.database import db
 from app.llm.edit_agent import edit_exercise
 from app.llm.extraction_agent import extract_exercises
+from app.llm.rate_limit import enforce_llm_rate_limit
 from app.llm.schemas import ExerciseEditInputSchema
 from app.llm.schemas import VariationInputSchema
 from app.llm.variation_agent import generate_variations
@@ -111,10 +111,10 @@ class AIEditRequest(BaseModel):
 @router.post("/extract")
 async def extract(
     payload: ExtractionRequest,
-    x_mistral_api_key: Annotated[str | None, Header()] = None,
+    _: None = Depends(enforce_llm_rate_limit),
 ) -> dict:
     try:
-        result = extract_exercises(payload.raw_text, api_key=x_mistral_api_key)
+        result = extract_exercises(payload.raw_text)
 
         # On retire les \n qui sont générés par l'agent.
         for ex in result.exercises:
@@ -142,7 +142,7 @@ async def extract(
 @router.post("/ai-edit")
 async def ai_edit(
     payload: AIEditRequest,
-    x_mistral_api_key: Annotated[str | None, Header()] = None,
+    _: None = Depends(enforce_llm_rate_limit),
 ) -> dict:
     """Applique une instruction d'IA à un exercice en cours d'édition.
 
@@ -164,7 +164,6 @@ async def ai_edit(
                 corrections=payload.corrections,
                 instruction=payload.instruction,
             ),
-            api_key=x_mistral_api_key,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -201,7 +200,7 @@ class VariationRequest(BaseModel):
 @router.post("/variations")
 async def variations(
     payload: VariationRequest,
-    x_mistral_api_key: Annotated[str | None, Header()] = None,
+    _: None = Depends(enforce_llm_rate_limit),
 ) -> dict:
     """Génère plusieurs variantes d'un exercice existant qui approfondissent
     le même problème avec d'autres notions mathématiques.
@@ -230,7 +229,6 @@ async def variations(
                 corrections=corrections,
                 instruction=payload.instruction,
             ),
-            api_key=x_mistral_api_key,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
