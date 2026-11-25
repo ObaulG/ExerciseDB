@@ -1,0 +1,52 @@
+/* === Page Modifier === */
+
+#select-window,
+#form-window,
+#preview-window {
+    max-width: 100%;
+    margin-bottom: 12px;
+}
+
+.edit-help {
+    font-size: 11px;
+    margin: 0 0 8px 0;
+    color: var(--bleu-fonce);
+}
+
+.edit-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.edit-select-row select {
+    flex: 1;
+    max-width: 420px;
+    background: #ffffff;
+    border: 2px solid;
+    border-top-color: var(--bleu-fonce);
+    border-left-color: var(--bleu-fonce);
+    border-right-color: var(--bleu-clair);
+    border-bottom-color: var(--bleu-clair);
+    padding: 4px 6px;
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+}
+
+.editing-badge {
+    font-weight: normal;
+    font-size: 11px;
+    color: var(--bleu);
+    margin-left: 8px;
+}
+
+.latex-status {
+    font-weight: normal;
+    font-size: 10px;
+    color: var(--vert-fonce);
+    margin-left: 8px;
+}
+
+.latex-status.latex-error {
+    color: #990000;
+}

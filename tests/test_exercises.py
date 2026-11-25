@@ -211,3 +211,71 @@ def test_ai_edit_does_not_write_to_db(client):
     )
     after = len(db.list_exercises())
     assert before == after
+
+
+def test_edit_page_renders(client):
+    response = client.get("/edit")
+    assert response.status_code == 200
+    assert "exercice" in response.text.lower()
+    assert "/static/js/edit.js" in response.text
+
+
+def _make_admin_and_login(client, pseudo="admin1"):
+    from app import auth
+    from app.database import db
+
+    with db.get_connection() as conn:
+        conn.execute(
+            'INSERT INTO "user" (pseudo, password_hash, is_admin) VALUES (%s, %s, TRUE)',
+            (pseudo, auth.hash_password("secret123")),
+        )
+    resp = client.post("/api/auth/login", json={"pseudo": pseudo, "password": "secret123"})
+    assert resp.status_code == 200
+
+
+def test_update_exercise_requires_admin(client):
+    payload = {
+        "name": "Pythagore",
+        "text": "Calcule $c$ tel que $c^2 = a^2 + b^2$",
+        "corrections": [],
+    }
+    exercise_id = client.post("/api/exercises", json=payload).json()["id"]
+
+    updated = dict(payload, name="Renommé")
+    assert client.put(f"/api/exercises/{exercise_id}", json=updated).status_code == 403
+
+    _make_admin_and_login(client)
+    resp = client.put(f"/api/exercises/{exercise_id}", json=updated)
+    assert resp.status_code == 200
+    assert resp.json()["exercise"]["name"] == "Renommé"
+
+
+def test_update_exercise_text_and_correction(client):
+    payload = {
+        "name": "Avant",
+        "text": "Calcule $1+1$.",
+        "corrections": [{"text": "$2$"}],
+        "themes": ["Fractions"],
+    }
+    exercise_id = client.post("/api/exercises", json=payload).json()["exercise"]["id"]
+
+    _make_admin_and_login(client)
+    updated = {
+        "name": "Après",
+        "text": "Calcule $2+2$.",
+        "type": "Application directe",
+        "niveau": "5e",
+        "temps_estime": 10,
+        "themes": ["Calcul — opérations élémentaires"],
+        "corrections": [{"text": "$4$."}, {"text": "Variante."}],
+    }
+    resp = client.put(f"/api/exercises/{exercise_id}", json=updated)
+    assert resp.status_code == 200
+    exercise = resp.json()["exercise"]
+    assert exercise["name"] == "Après"
+    assert exercise["text"] == "Calcule $2+2$."
+    assert exercise["type"] == "Application directe"
+    assert exercise["niveau"] == "5e"
+    assert exercise["temps_estime"] == 10
+    assert exercise["themes"] == ["Calcul — opérations élémentaires"]
+    assert [c["text"] for c in exercise["corrections"]] == ["$4$.", "Variante."]
